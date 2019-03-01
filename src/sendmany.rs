@@ -74,8 +74,8 @@ pub fn sendmany(_z_inputs_: Vec<SaplingNoteEntry>, _z_outputs_: Vec<SendManyReci
     }
     */
 
-    let mut ops = Vec::new();
-    let mut notes = Vec::new();
+    //let mut ops = Vec::new();
+    //let mut notes = Vec::new();
     /*
     CAmount sum = 0;
     for (auto t : z_sapling_inputs_) {
@@ -87,10 +87,18 @@ pub fn sendmany(_z_inputs_: Vec<SaplingNoteEntry>, _z_outputs_: Vec<SendManyReci
     }
     }*/
     let mut targetAmount = 100;
-    let (ops, sum) = _z_inputs_.iter().try_fold(([], 0),
-                               |(a, s), t|
-                                   if (sum < targetAmount) { Some((a + t, s+t.note.value) ) }
-                                    else {None});
+    let result = _z_inputs_.iter().try_fold((vec![], vec![], 0),
+                               |(mut a, mut b, s), t|
+                                   if (s < targetAmount) {
+                                           a.push(t.op);
+                                           b.push(t.note);
+                                           Some((a, b, s+t.note.value) )
+                                       }
+                                       else {None});
+    assert_eq!(result.is_none(), false);
+
+    let (ops, notes, _) = result.unwrap();
+
 
 
 
