@@ -10,3 +10,4 @@ pairing = { path = "../librustzcash/pairing" }
 librustzcash = { path = "../librustzcash/librustzcash" }
 zcash_primitives = { path = "../librustzcash/zcash_primitives" }
 sapling-crypto = { path = "../librustzcash/sapling-crypto" }
+bigint = "1.0"
