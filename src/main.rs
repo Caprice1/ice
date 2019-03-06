@@ -8,8 +8,8 @@ mod my;
 use std::thread;
 use std::sync::mpsc;
 use std::io;
-use sendmany::Sender;
-use wallet::Wallet;
+use crate::sendmany::Sender;
+use crate::wallet::Wallet;
 
 fn main() {
     sendmany::show();
@@ -20,7 +20,7 @@ fn main() {
 
     let sender = Sender{
         main_wallet: wallet,
-    }; 
+    };
 
     let (tx, rx) = mpsc::channel();
 
@@ -29,6 +29,7 @@ fn main() {
         //Setup work queue
         for item in rx {
             println!("Received: {}", item);
+
         }
         println!("Work queue thread end");
     });

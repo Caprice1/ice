@@ -21,7 +21,7 @@ impl Wallet{
         }
     }
 
-    fn get_sapling_note_witnesses(&self, notes: Vec<SaplingOutPoint>,
+    pub fn get_sapling_note_witnesses(&self, notes: &Vec<&SaplingOutPoint>,
                                 witnesses: &mut Vec<SaplingWitness>,
                                 anchor: &mut U256) {
 

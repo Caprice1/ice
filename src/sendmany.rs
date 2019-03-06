@@ -14,8 +14,11 @@ use sapling_crypto::{
     primitives::{Note, PaymentAddress},
 };
 
+use bigint::U256;
+
 use crate::my::constants;
 use crate::wallet::Wallet;
+use crate::sapling_witness::SaplingWitness;
 
 
 //static mut pMainWallet: Wallet = Wallet::new();
@@ -70,7 +73,7 @@ pub fn show() {
 
 pub struct Sender {
 
-    main_wallet: Wallet,
+    pub main_wallet: Wallet,
 }
 
 impl Sender {
@@ -98,11 +101,11 @@ impl Sender {
         }*/
         let mut target_amount = 100;
         let result = _z_inputs_.iter().try_fold((vec![], vec![], 0),
-                                   |(mut a, mut b, s), t|
-                                       if (s < target_amount) {
+                                    |(mut a, mut b, s), t|
+                                       if s < target_amount {
                                                a.push(&t.op);
                                                b.push(&t.note);
-                                               Some((a, b, s+t.note.value) )
+                                               Some((a, b, s+t.note.value))
                                            }
                                            else {None});
         assert_eq!(result.is_none(), false);
@@ -110,6 +113,9 @@ impl Sender {
         let (ops, notes, _) = result.unwrap();
 
 
+        let mut witnesses: Vec<SaplingWitness> = Vec::new();
+        let mut anchor: U256 = U256::from(0);
+        self.main_wallet.get_sapling_note_witnesses(&ops, &mut witnesses, &mut anchor);
 
 
         println!("In sendmany");
