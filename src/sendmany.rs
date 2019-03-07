@@ -16,9 +16,17 @@ use sapling_crypto::{
 
 use bigint::U256;
 
+use std::collections::LinkedList;
+use std::cmp::Eq;
+use std::hash::{Hash, Hasher};
+
 use crate::my::constants;
 use crate::wallet::Wallet;
-use crate::sapling_witness::SaplingWitness;
+use crate::incremental_tree::{
+    SaplingWitness,
+};
+
+use crate::key::key_management::SaplingIncomingViewingKey;
 
 
 //static mut pMainWallet: Wallet = Wallet::new();
@@ -30,7 +38,6 @@ pub struct SpendDescriptionInfo {
     note: Note<Bls12>,
     pub alpha: Fr,
     pub ahchor: Fr,
-
 }
 
 /*
@@ -43,11 +50,42 @@ struct SaplingNoteEntry
     int confirmations;
 };
 */
+
+#[derive(PartialEq, Eq, Hash)]
 pub struct SaplingOutPoint
 {
-    //uint256
-    pub hash: Fr,
+    pub hash: U256,
     pub n: u32,
+}
+
+/*
+impl Eq for SaplingOutPoint {
+
+}
+
+impl Hash for SaplingOutPoint {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.hash.hash(state);
+        self.n.hash(state);
+    }
+}*/
+
+pub struct SaplingNoteData
+{
+    /*
+    std::list<SaplingWitness> witnesses;
+    int witnessHeight;
+    libzcash::SaplingIncomingViewingKey ivk;
+    boost::optional<uint256> nullifier;
+    */
+
+    pub witnesses: LinkedList<Box<SaplingWitness>>,
+
+    pub witnessHeight: u64,
+
+    pub ivk: SaplingIncomingViewingKey,
+
+    pub nullifier: Option<U256>,
 }
 
 
@@ -72,7 +110,6 @@ pub fn show() {
 }
 
 pub struct Sender {
-
     pub main_wallet: Wallet,
 }
 
@@ -112,10 +149,16 @@ impl Sender {
 
         let (ops, notes, _) = result.unwrap();
 
-
-        let mut witnesses: Vec<SaplingWitness> = Vec::new();
+        /*let mut witnesses: Vec<SaplingWitness> = Vec::new();
         let mut anchor: U256 = U256::from(0);
         self.main_wallet.get_sapling_note_witnesses(&ops, &mut witnesses, &mut anchor);
+        */
+
+        let (witnesses, anchor)
+            = self.main_wallet.get_sapling_note_witnesses(&ops);
+
+
+
 
 
         println!("In sendmany");
