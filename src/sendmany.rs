@@ -4,7 +4,7 @@
 extern crate zip32;
 extern crate pairing;
 
-use zip32::ExpandedSpendingKey;
+
 
 use pairing::{
     bls12_381::{Bls12, Fr, FrRepr},
@@ -20,13 +20,17 @@ use std::collections::LinkedList;
 use std::cmp::Eq;
 use std::hash::{Hash, Hasher};
 
-use crate::my::constants;
+use crate::my::constants::ZC_MEMO_SIZE;
 use crate::wallet::Wallet;
-use crate::incremental_tree::{
+use crate::incremental_tree::tree::{
     SaplingWitness,
 };
 
-use crate::key::key_management::SaplingIncomingViewingKey;
+use crate::key::key_management::{
+    SaplingIncomingViewingKey,
+    SaplingExpandedSpendingKey,
+    SaplingNote,
+};
 
 
 //static mut pMainWallet: Wallet = Wallet::new();
@@ -34,22 +38,18 @@ use crate::key::key_management::SaplingIncomingViewingKey;
 //SaplingNote
 
 pub struct SpendDescriptionInfo {
-    pub expsk: ExpandedSpendingKey<Bls12>,
-    note: Note<Bls12>,
+    pub expsk: SaplingExpandedSpendingKey,
+    pub note: SaplingNote,
     pub alpha: Fr,
     pub ahchor: Fr,
 }
 
-/*
-struct SaplingNoteEntry
-{
-    SaplingOutPoint op;
-    libzcash::SaplingPaymentAddress address;
-    libzcash::SaplingNote note;
-    std::array<unsigned char, ZC_MEMO_SIZE> memo;
-    int confirmations;
-};
-*/
+pub struct OutputDescriptionInfo {
+    pub ovk: U256,
+    pub note: SaplingNote,
+    pub memo: [char; ZC_MEMO_SIZE],
+
+}
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct SaplingOutPoint
@@ -58,17 +58,6 @@ pub struct SaplingOutPoint
     pub n: u32,
 }
 
-/*
-impl Eq for SaplingOutPoint {
-
-}
-
-impl Hash for SaplingOutPoint {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.hash.hash(state);
-        self.n.hash(state);
-    }
-}*/
 
 pub struct SaplingNoteData
 {
@@ -94,7 +83,7 @@ pub struct SaplingNoteEntry {
     //PaymentAddress not sure is Bls12
     address: PaymentAddress<Bls12>,
     note: Note<Bls12>,
-    memo: [char; constants::ZC_MEMO_SIZE],
+    memo: [char; ZC_MEMO_SIZE],
     confirmation: i32,
 }
 
@@ -116,26 +105,7 @@ pub struct Sender {
 impl Sender {
 
     pub fn send_many(&self, _z_inputs_: Vec<SaplingNoteEntry>, _z_outputs_: Vec<SendManyRecipient>) {
-        /*
-        if (isfromzaddr_) {
-                auto sk = boost::get<libzcash::SaplingExtendedSpendingKey>(spendingkey_);
-                expsk = sk.expsk;
-                ovk = expsk.full_viewing_key().ovk;
-        }
-        */
 
-        //let mut ops = Vec::new();
-        //let mut notes = Vec::new();
-        /*
-        CAmount sum = 0;
-        for (auto t : z_sapling_inputs_) {
-        ops.push_back(t.op);
-        notes.push_back(t.note);
-        sum += t.note.value();
-        if (sum >= targetAmount) {
-        break;
-        }
-        }*/
         let mut target_amount = 100;
         let result = _z_inputs_.iter().try_fold((vec![], vec![], 0),
                                     |(mut a, mut b, s), t|
@@ -149,13 +119,17 @@ impl Sender {
 
         let (ops, notes, _) = result.unwrap();
 
-        /*let mut witnesses: Vec<SaplingWitness> = Vec::new();
-        let mut anchor: U256 = U256::from(0);
-        self.main_wallet.get_sapling_note_witnesses(&ops, &mut witnesses, &mut anchor);
-        */
-
         let (witnesses, anchor)
             = self.main_wallet.get_sapling_note_witnesses(&ops);
+
+        for witness_op in witnesses {
+            match witness_op {
+                None => { panic!("No witness found");  }
+                Some(witness) => {
+
+                }
+            }
+        }
 
 
 

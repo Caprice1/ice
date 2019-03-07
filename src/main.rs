@@ -1,5 +1,6 @@
 mod sendmany;
 mod transaction;
+mod transaction_builder;
 mod wallet;
 mod incremental_tree;
 mod my;

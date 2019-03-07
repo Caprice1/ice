@@ -8,8 +8,8 @@ pub trait IncrementalMerkleTreeTrait<H> {
     fn root(&self) -> H;
 }
 
-/*
-pub struct IncrementalMerkleTree<H> {
+
+/*pub struct IncrementalMerkleTree<H> {
 
 }
 
@@ -32,7 +32,6 @@ pub struct MerklePath {
 }
 
 impl MerklePath {
-
 
 }
 
