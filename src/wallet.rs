@@ -8,9 +8,6 @@ use crate::incremental_tree::tree::SaplingWitness;
 
 
 pub struct Wallet {
-    /*
-    std::map<uint256, CWalletTx> mapWallet;
-    */
     pub map_wallet: HashMap<U256, Transaction>,
 }
 

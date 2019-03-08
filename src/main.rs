@@ -10,8 +10,21 @@ mod key;
 use std::thread;
 use std::sync::mpsc;
 use std::io;
-use crate::sendmany::Sender;
+//use std::vec::Vec;
+
+use crate::sendmany::SendMany;
+
+
 use crate::wallet::Wallet;
+use crate::key::address::AddressManagement;
+
+
+fn sendmany(params: Vec<String>) {
+
+
+
+
+}
 
 fn main() {
     sendmany::show();
@@ -19,9 +32,11 @@ fn main() {
 
 
     let wallet = Wallet::new();
+    let address_management = AddressManagement::new();
 
-    let sender = Sender{
+    let sender = SendMany {
         main_wallet: wallet,
+        address_management: address_management,
     };
 
     let (tx, rx) = mpsc::channel();
@@ -31,7 +46,10 @@ fn main() {
         //Setup work queue
         for item in rx {
             println!("Received: {}", item);
+            let s = item as String;
+            let params = s.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
 
+            sendmany(params);
         }
         println!("Work queue thread end");
     });
@@ -44,6 +62,7 @@ fn main() {
             Ok(n) => {
                 println!("{} bytes read", n);
                 println!("{}", input);
+
                 tx.send(input).unwrap();
             }
             Err(error) => println!("error: {}", error),

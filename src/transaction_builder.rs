@@ -41,12 +41,19 @@ void TransactionBuilder::AddSaplingSpend(
     mtx.valueBalance += note.value();
 }
 */
-    fn add_sapling_spend(
-        expsk: SaplingExpandedSpendingKey,
-        note:  SaplingNote,
-        anchor: U256,
-        witness: Box<SaplingWitness>,
-        ) {
+    pub fn new() -> Self {
+        TransactionBuilder {
+            spends: Vec::new(),
+            outputs: Vec::new(),
+        }
+    }
+
+    pub fn add_sapling_spend(&self,
+                             expsk: SaplingExpandedSpendingKey,
+                             note:  SaplingNote,
+                             anchor: U256,
+                             witness: Box<SaplingWitness>,
+    ) {
 
     }
 }

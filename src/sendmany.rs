@@ -32,6 +32,8 @@ use crate::key::key_management::{
     SaplingNote,
 };
 
+use crate::transaction_builder::TransactionBuilder;
+use crate::key::address::AddressManagement;
 
 //static mut pMainWallet: Wallet = Wallet::new();
 
@@ -87,9 +89,9 @@ pub struct SaplingNoteEntry {
     confirmation: i32,
 }
 
-type CAmount = u64;
+pub type CAmount = u64;
 
-pub struct SendManyRecipient(String, CAmount, String);
+pub type SendManyRecipient = (String, CAmount, String);
 
 pub fn show() {
     println!("sendmany show");
@@ -98,13 +100,70 @@ pub fn show() {
 
 }
 
-pub struct Sender {
+pub struct SendMany {
     pub main_wallet: Wallet,
+    pub address_management: AddressManagement,
 }
 
-impl Sender {
+impl SendMany {
+
+    /*pub fn new(builder: TransactionBuilder,
+                ) -> Self {
+
+    }*/
+
+    pub fn pre_send_many(&self, params:Vec<String>) {
+        println!("In sendmany");
+
+        let len = params.len();
+
+        //if (fHelp || params.size() < 2 || params.size() > 4)
+        if len < 3 || len > 5 {
+            panic!("Please check you input");
+        }
+
+        if params[0] == "sendmany" {
+            for param in &params {
+                print!("{} ", param);
+            }
+            println!("");
+        } else {
+            println!("Not sendmany");
+        }
+
+        let fromaddress = &params[1];
+        let is_tx = self.address_management.decode_transparent_destination(fromaddress);
+        let is_zx = self.address_management.decode_z_destination(fromaddress);
+
+        /*let outputs_str = params[2].split(",").collect::<Vec<_>>();
+        if outputs_str.len() == 0 {
+            panic!("No outputs");
+        }*/
+
+        let outputs_str = &params[2];
+        let (zaddrRecipients, taddrRecipients, total_amount)
+            = self.address_management.decode_outputs(outputs_str);
+
+
+    }
+
+
+
 
     pub fn send_many(&self, _z_inputs_: Vec<SaplingNoteEntry>, _z_outputs_: Vec<SendManyRecipient>) {
+
+
+        let transaction_builder = TransactionBuilder::new();
+
+        //if (isfromzaddr_) {
+        //            auto sk = boost::get<libzcash::SaplingExtendedSpendingKey>(spendingkey_);
+        //            expsk = sk.expsk;
+        //            ovk = expsk.full_viewing_key().ovk;
+        //        } else {
+
+
+        //SaplingExpandedSpendingKey
+
 
         let mut target_amount = 100;
         let result = _z_inputs_.iter().try_fold((vec![], vec![], 0),
@@ -126,13 +185,10 @@ impl Sender {
             match witness_op {
                 None => { panic!("No witness found");  }
                 Some(witness) => {
-
+                    //transaction_builder.add_sapling_spend();
                 }
             }
         }
-
-
-
 
 
         println!("In sendmany");
