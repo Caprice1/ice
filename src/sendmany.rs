@@ -34,6 +34,7 @@ use crate::key::key_management::{
 
 use crate::transaction_builder::TransactionBuilder;
 use crate::key::address::AddressManagement;
+use crate::other::sanity_check::SanityChecker;
 
 //static mut pMainWallet: Wallet = Wallet::new();
 
@@ -103,14 +104,11 @@ pub fn show() {
 pub struct SendMany {
     pub main_wallet: Wallet,
     pub address_management: AddressManagement,
+    pub sanity_checker: SanityChecker,
 }
 
+
 impl SendMany {
-
-    /*pub fn new(builder: TransactionBuilder,
-                ) -> Self {
-
-    }*/
 
     pub fn pre_send_many(&self, params:Vec<String>) {
         println!("In sendmany");
@@ -129,9 +127,11 @@ impl SendMany {
             println!("");
         } else {
             println!("Not sendmany");
+            return;
         }
 
-        let fromaddress = &params[1];
+        let params = &params[1..];
+        let fromaddress = &params[0];
         let is_tx = self.address_management.decode_transparent_destination(fromaddress);
         let is_zx = self.address_management.decode_z_destination(fromaddress);
 
@@ -140,46 +140,117 @@ impl SendMany {
             panic!("No outputs");
         }*/
 
-        let outputs_str = &params[2];
+        let outputs_str = &params[1];
         let (zaddrRecipients, taddrRecipients, total_amount)
             = self.address_management.decode_outputs(outputs_str);
 
+        self.sanity_checker.check_transaction_size(&zaddrRecipients);
 
+        let nMinDepth = self.sanity_checker.get_check_mindepth(&params);
+
+        let nFee = self.sanity_checker.get_check_fee(&params);
+
+        //let context_info = vec![];
+
+        //int nextBlockHeight = chainActive.Height() + 1;
+        //TODO
+        let next_block_height = 0;
+
+        let builder =
+            TransactionBuilder::new(next_block_height, &self.main_wallet);
+
+        let sendmany_operation
+            = SendManyOperation::new(
+                &builder, fromaddress.clone(), taddrRecipients, zaddrRecipients,
+                nMinDepth, nFee);
+
+        sendmany_operation.main_impl();
+    }
+
+}
+
+pub struct SendManyOperation<'a> {
+    /*
+    std::vector<SendManyRecipient> t_outputs_;
+    std::vector<SendManyRecipient> z_outputs_;
+    std::vector<SendManyInputUTXO> t_inputs_;
+    std::vector<SendManyInputJSOP> z_sprout_inputs_;
+    std::vector<SaplingNoteEntry> z_sapling_inputs_;
+
+    CAmount fee_;
+    int mindepth_;
+    std::string fromaddress_;
+    bool isfromtaddr_;
+    bool isfromzaddr_;
+    */
+    z_inputs_: Vec<SaplingNoteEntry>,
+    t_outputs_: Vec<SendManyRecipient>,
+    z_outputs_: Vec<SendManyRecipient>,
+    builder_: &'a TransactionBuilder<'a>,
+
+    fee_: CAmount,
+    mindepth: i32,
+    fromaddress_: String,
+}
+
+impl<'a> SendManyOperation<'a> {
+    //std::shared_ptr<AsyncRPCOperation>
+    // operation( new AsyncRPCOperation_sendmany
+    // (builder, contextualTx, fromaddress, taddrRecipients,
+    // zaddrRecipients, nMinDepth, nFee, contextInfo) );
+    //
+
+    //AsyncRPCOperation_sendmany(
+    //        boost::optional<TransactionBuilder> builder,
+    //        CMutableTransaction contextualTx,
+    //        std::string fromAddress,
+    //        std::vector<SendManyRecipient> tOutputs,
+    //        std::vector<SendManyRecipient> zOutputs,
+    //        int minDepth,
+    //        CAmount fee = ASYNC_RPC_OPERATION_DEFAULT_MINERS_FEE,
+    //        UniValue contextInfo = NullUniValue);
+
+    fn new(builder: &'a TransactionBuilder,
+           /*contextualTx: MutableTransaction,*/
+           fromaddress: String,
+           t_outputs: Vec<SendManyRecipient>,
+           z_outputs: Vec<SendManyRecipient>,
+           min_depth: i32,
+           fee: CAmount,
+           /*contextInfo: */) -> Self {
+        SendManyOperation {
+            builder_: builder,
+            fromaddress_: fromaddress,
+            t_outputs_: t_outputs,
+            z_outputs_: z_outputs,
+            mindepth: min_depth,
+            fee_: fee,
+
+            z_inputs_: Vec::new(),
+        }
     }
 
 
 
-
-    pub fn send_many(&self, _z_inputs_: Vec<SaplingNoteEntry>, _z_outputs_: Vec<SendManyRecipient>) {
-
-
-        let transaction_builder = TransactionBuilder::new();
-
-        //if (isfromzaddr_) {
-        //            auto sk = boost::get<libzcash::SaplingExtendedSpendingKey>(spendingkey_);
-        //            expsk = sk.expsk;
-        //            ovk = expsk.full_viewing_key().ovk;
-        //        } else {
+    pub fn main_impl(&self) {
 
 
-        //SaplingExpandedSpendingKey
-
-
+        let builder = &self.builder_.wallet;
         let mut target_amount = 100;
-        let result = _z_inputs_.iter().try_fold((vec![], vec![], 0),
-                                    |(mut a, mut b, s), t|
-                                       if s < target_amount {
-                                               a.push(&t.op);
-                                               b.push(&t.note);
-                                               Some((a, b, s+t.note.value))
-                                           }
-                                           else {None});
+        let result = self.z_inputs_.iter().try_fold((vec![], vec![], 0),
+                                                |(mut a, mut b, s), t|
+                                                    if s < target_amount {
+                                                        a.push(&t.op);
+                                                        b.push(&t.note);
+                                                        Some((a, b, s+t.note.value))
+                                                    }
+                                                        else {None});
         assert_eq!(result.is_none(), false);
 
         let (ops, notes, _) = result.unwrap();
 
         let (witnesses, anchor)
-            = self.main_wallet.get_sapling_note_witnesses(&ops);
+            = builder.get_sapling_note_witnesses(&ops);
 
         for witness_op in witnesses {
             match witness_op {
@@ -194,3 +265,9 @@ impl SendMany {
         println!("In sendmany");
     }
 }
+
+
+
+
+
+

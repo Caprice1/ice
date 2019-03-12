@@ -5,6 +5,7 @@ mod wallet;
 mod incremental_tree;
 mod my;
 mod key;
+mod other;
 
 
 use std::thread;
@@ -17,39 +18,38 @@ use crate::sendmany::SendMany;
 
 use crate::wallet::Wallet;
 use crate::key::address::AddressManagement;
+use crate::other::sanity_check::SanityChecker;
 
-
-fn sendmany(params: Vec<String>) {
-
-
-
-
-}
 
 fn main() {
     sendmany::show();
     wallet::show();
 
 
-    let wallet = Wallet::new();
-    let address_management = AddressManagement::new();
 
-    let sender = SendMany {
-        main_wallet: wallet,
-        address_management: address_management,
-    };
 
     let (tx, rx) = mpsc::channel();
 
 
     thread::spawn(move || {
+
+        let wallet = Wallet::new();
+        let address_management = AddressManagement::new();
+        let sanity_checker= SanityChecker::new();
+
+        let sender = SendMany {
+            main_wallet: wallet,
+            address_management: address_management,
+            sanity_checker: sanity_checker,
+        };
+
         //Setup work queue
         for item in rx {
             println!("Received: {}", item);
             let s = item as String;
             let params = s.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
 
-            sendmany(params);
+            sender.pre_send_many(params);
         }
         println!("Work queue thread end");
     });

@@ -13,13 +13,17 @@ use crate::key::key_management::{
 
 use crate::incremental_tree::tree::SaplingWitness;
 
-pub struct TransactionBuilder {
+use crate::wallet::Wallet;
+
+pub struct TransactionBuilder<'a> {
     pub spends: Vec<SpendDescriptionInfo>,
     pub outputs: Vec<OutputDescriptionInfo>,
+    pub wallet: &'a Wallet,
+    pub next_block_height: i32,
 }
 
 
-impl TransactionBuilder {
+impl<'a> TransactionBuilder<'a> {
 /*
 void TransactionBuilder::AddSaplingSpend(
     libzcash::SaplingExpandedSpendingKey expsk,
@@ -41,10 +45,12 @@ void TransactionBuilder::AddSaplingSpend(
     mtx.valueBalance += note.value();
 }
 */
-    pub fn new() -> Self {
+    pub fn new(height: i32, wallet: &'a Wallet) -> Self {
         TransactionBuilder {
             spends: Vec::new(),
             outputs: Vec::new(),
+            next_block_height: height,
+            wallet: wallet,
         }
     }
 
