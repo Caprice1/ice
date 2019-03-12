@@ -17,8 +17,8 @@ use crate::sendmany::SendMany;
 
 
 use crate::wallet::Wallet;
-use crate::key::address::AddressManagement;
 use crate::other::sanity_check::SanityChecker;
+use crate::key::key_store::KeyStore;
 
 
 fn main() {
@@ -34,13 +34,15 @@ fn main() {
     thread::spawn(move || {
 
         let wallet = Wallet::new();
-        let address_management = AddressManagement::new();
+        //let address_management = AddressManagement::new();
         let sanity_checker= SanityChecker::new();
+        let key_store = KeyStore::new();
 
         let sender = SendMany {
             main_wallet: wallet,
-            address_management: address_management,
+            //address_management: address_management,
             sanity_checker: sanity_checker,
+            key_store: key_store,
         };
 
         //Setup work queue

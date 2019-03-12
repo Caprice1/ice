@@ -29,12 +29,13 @@ use crate::incremental_tree::tree::{
 use crate::key::key_management::{
     SaplingIncomingViewingKey,
     SaplingExpandedSpendingKey,
+    SaplingExtendedSpendingKey,
     SaplingNote,
 };
 
 use crate::transaction_builder::TransactionBuilder;
-use crate::key::address::AddressManagement;
 use crate::other::sanity_check::SanityChecker;
+use crate::key::key_store::KeyStore;
 
 //static mut pMainWallet: Wallet = Wallet::new();
 
@@ -103,7 +104,8 @@ pub fn show() {
 
 pub struct SendMany {
     pub main_wallet: Wallet,
-    pub address_management: AddressManagement,
+    //pub address_management: AddressManagement,
+    pub key_store: KeyStore,
     pub sanity_checker: SanityChecker,
 }
 
@@ -132,8 +134,10 @@ impl SendMany {
 
         let params = &params[1..];
         let fromaddress = &params[0];
-        let is_tx = self.address_management.decode_transparent_destination(fromaddress);
-        let is_zx = self.address_management.decode_z_destination(fromaddress);
+        let is_tx = self.key_store.decode_transparent_destination(fromaddress);
+        let (payment_address, spending_key_option)
+            = self.key_store.decode_z_destination(fromaddress);
+
 
         /*let outputs_str = params[2].split(",").collect::<Vec<_>>();
         if outputs_str.len() == 0 {
@@ -142,7 +146,7 @@ impl SendMany {
 
         let outputs_str = &params[1];
         let (zaddrRecipients, taddrRecipients, total_amount)
-            = self.address_management.decode_outputs(outputs_str);
+            = self.key_store.decode_outputs(outputs_str);
 
         self.sanity_checker.check_transaction_size(&zaddrRecipients);
 
@@ -159,10 +163,14 @@ impl SendMany {
         let builder =
             TransactionBuilder::new(next_block_height, &self.main_wallet);
 
+        //let spending_key_op =
+        //    self.key_store.get_sapling_extended_spending_key(spending_key_option);
+        let expsk: Option<SaplingExpandedSpendingKey> = spending_key_option.and_then(|spending_key: SaplingExtendedSpendingKey | Some(spending_key.expsk));
+
         let sendmany_operation
             = SendManyOperation::new(
                 &builder, fromaddress.clone(), taddrRecipients, zaddrRecipients,
-                nMinDepth, nFee);
+                nMinDepth, nFee, expsk.unwrap());
 
         sendmany_operation.main_impl();
     }
@@ -186,7 +194,9 @@ pub struct SendManyOperation<'a> {
     z_inputs_: Vec<SaplingNoteEntry>,
     t_outputs_: Vec<SendManyRecipient>,
     z_outputs_: Vec<SendManyRecipient>,
-    builder_: &'a TransactionBuilder<'a>,
+    transaction_builder_: &'a TransactionBuilder<'a>,
+
+    spendingkey_: SaplingExpandedSpendingKey,
 
     fee_: CAmount,
     mindepth: i32,
@@ -217,14 +227,17 @@ impl<'a> SendManyOperation<'a> {
            z_outputs: Vec<SendManyRecipient>,
            min_depth: i32,
            fee: CAmount,
+           spendingkey_: SaplingExpandedSpendingKey,
            /*contextInfo: */) -> Self {
         SendManyOperation {
-            builder_: builder,
+            transaction_builder_: builder,
             fromaddress_: fromaddress,
             t_outputs_: t_outputs,
             z_outputs_: z_outputs,
             mindepth: min_depth,
             fee_: fee,
+
+            spendingkey_: spendingkey_,
 
             z_inputs_: Vec::new(),
         }
@@ -234,8 +247,11 @@ impl<'a> SendManyOperation<'a> {
 
     pub fn main_impl(&self) {
 
+        //let sk = self.spendingkey_;
+        //let expsk = sk;
 
-        let builder = &self.builder_.wallet;
+
+        let wallet = &self.transaction_builder_.wallet;
         let mut target_amount = 100;
         let result = self.z_inputs_.iter().try_fold((vec![], vec![], 0),
                                                 |(mut a, mut b, s), t|
@@ -250,13 +266,15 @@ impl<'a> SendManyOperation<'a> {
         let (ops, notes, _) = result.unwrap();
 
         let (witnesses, anchor)
-            = builder.get_sapling_note_witnesses(&ops);
+            = wallet.get_sapling_note_witnesses(&ops);
 
-        for witness_op in witnesses {
+        for (i, witness_op) in witnesses.iter().enumerate() {
             match witness_op {
                 None => { panic!("No witness found");  }
                 Some(witness) => {
-                    //transaction_builder.add_sapling_spend();
+                    self.transaction_builder_.add_sapling_spend(
+                        self.spendingkey_, notes[i], anchor.unwrap(), witness
+                    );
                 }
             }
         }

@@ -56,7 +56,7 @@ void TransactionBuilder::AddSaplingSpend(
 
     pub fn add_sapling_spend(&self,
                              expsk: SaplingExpandedSpendingKey,
-                             note:  SaplingNote,
+                             note:  &SaplingNote,
                              anchor: U256,
                              witness: Box<SaplingWitness>,
     ) {
