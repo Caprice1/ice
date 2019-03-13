@@ -18,7 +18,7 @@ use crate::wallet::Wallet;
 pub struct TransactionBuilder<'a> {
     pub spends: Vec<SpendDescriptionInfo>,
     pub outputs: Vec<OutputDescriptionInfo>,
-    pub wallet: &'a Wallet,
+    pub wallet: &'a Wallet<'a>,
     pub next_block_height: i32,
 }
 
@@ -55,10 +55,10 @@ void TransactionBuilder::AddSaplingSpend(
     }
 
     pub fn add_sapling_spend(&self,
-                             expsk: SaplingExpandedSpendingKey,
+                             expsk: &SaplingExpandedSpendingKey,
                              note:  &SaplingNote,
                              anchor: U256,
-                             witness: Box<SaplingWitness>,
+                             witness: &&SaplingWitness,
     ) {
 
     }

@@ -39,7 +39,7 @@ fn main() {
         let key_store = KeyStore::new();
 
         let sender = SendMany {
-            main_wallet: wallet,
+            main_wallet: &wallet,
             //address_management: address_management,
             sanity_checker: sanity_checker,
             key_store: key_store,

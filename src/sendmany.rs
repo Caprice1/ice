@@ -63,7 +63,7 @@ pub struct SaplingOutPoint
 }
 
 
-pub struct SaplingNoteData
+pub struct SaplingNoteData<'a>
 {
     /*
     std::list<SaplingWitness> witnesses;
@@ -72,7 +72,7 @@ pub struct SaplingNoteData
     boost::optional<uint256> nullifier;
     */
 
-    pub witnesses: LinkedList<Box<SaplingWitness>>,
+    pub witnesses: LinkedList<&'a SaplingWitness>,
 
     pub witnessHeight: u64,
 
@@ -102,15 +102,15 @@ pub fn show() {
 
 }
 
-pub struct SendMany {
-    pub main_wallet: Wallet,
+pub struct SendMany<'a> {
+    pub main_wallet: &'a Wallet<'a>,
     //pub address_management: AddressManagement,
     pub key_store: KeyStore,
     pub sanity_checker: SanityChecker,
 }
 
 
-impl SendMany {
+impl<'a> SendMany<'a> {
 
     pub fn pre_send_many(&self, params:Vec<String>) {
         println!("In sendmany");
@@ -268,12 +268,13 @@ impl<'a> SendManyOperation<'a> {
         let (witnesses, anchor)
             = wallet.get_sapling_note_witnesses(&ops);
 
+        //for witness_op in witnesses {
         for (i, witness_op) in witnesses.iter().enumerate() {
             match witness_op {
                 None => { panic!("No witness found");  }
                 Some(witness) => {
                     self.transaction_builder_.add_sapling_spend(
-                        self.spendingkey_, notes[i], anchor.unwrap(), witness
+                        &self.spendingkey_, notes[i], anchor.unwrap(), witness
                     );
                 }
             }

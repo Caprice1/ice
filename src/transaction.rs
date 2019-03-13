@@ -6,7 +6,7 @@ use crate::sendmany::SaplingNoteData;
 
 
 
-pub struct Transaction{
+pub struct Transaction<'a>{
     //std::map<SaplingOutPoint, SaplingNoteData> mapSaplingData;
-    pub mapSaplingData: HashMap<SaplingOutPoint, SaplingNoteData>,
+    pub mapSaplingData: HashMap<SaplingOutPoint, SaplingNoteData<'a>>,
 }

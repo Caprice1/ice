@@ -7,11 +7,11 @@ use crate::sendmany::SaplingOutPoint;
 use crate::incremental_tree::tree::SaplingWitness;
 
 
-pub struct Wallet {
-    pub map_wallet: HashMap<U256, Transaction>,
+pub struct Wallet<'a> {
+    pub map_wallet: HashMap<U256, Transaction<'a>>,
 }
 
-impl Wallet{
+impl<'a> Wallet<'a>{
     pub fn new() -> Self {
         Wallet{
             map_wallet: HashMap::new(),
@@ -19,7 +19,7 @@ impl Wallet{
     }
 
     pub fn get_sapling_note_witnesses(&self, notes: &Vec<&SaplingOutPoint>)
-        -> (Vec<Option<&Box<SaplingWitness>>>, Option<U256>) {
+        -> (Vec<Option<&&SaplingWitness>>, Option<U256>) {
         let mut rt: Option<U256> = None;
 
         let mut witnesses=
@@ -30,7 +30,7 @@ impl Wallet{
                         |data| data.witnesses.front().and_then(
                             |witness| {
 
-                                let r = witness.root();
+                                let r = witness.root().unwrap();
 
                                 match rt {
                                     None => { rt = Some(r);}

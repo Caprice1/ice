@@ -13,14 +13,15 @@ pub struct KeyStore {
     //SaplingSpendingKeyMap mapSaplingSpendingKeys;
     //    SaplingFullViewingKeyMap mapSaplingFullViewingKeys;
     //    SaplingIncomingViewingKeyMap mapSaplingIncomingViewingKeys;
-    mapSaplingIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
+
+    //mapSaplingIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
 }
 
 impl KeyStore {
 
     pub fn new() -> Self {
         KeyStore {
-            mapSaplingIncomingViewKeys: HashMap::new(),
+            //mapSaplingIncomingViewKeys: HashMap::new(),
         }
     }
 
