@@ -22,6 +22,15 @@ pub fn decode_payment_address(address: &String) -> Option<SaplingPaymentAddress>
     None
 }
 
+
+pub struct TxDestination {
+
+}
+
+pub fn decode_destination(address: &String) -> Option<TxDestination>{
+    None
+}
+
 impl KeyStore {
 
     pub fn new() -> Self {

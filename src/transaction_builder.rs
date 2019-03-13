@@ -11,11 +11,16 @@ use crate::key::key_management::{
     SaplingNote,
     SaplingPaymentAddress,
     SaplingOutgoingViewingKey,
+
 };
+
+use crate::key::key_store::TxDestination;
 
 use crate::incremental_tree::tree::SaplingWitness;
 
 use crate::wallet::Wallet;
+
+
 
 pub struct TransactionBuilder<'a> {
     pub spends: Vec<SpendDescriptionInfo>,
@@ -23,6 +28,7 @@ pub struct TransactionBuilder<'a> {
     pub wallet: &'a Wallet<'a>,
     pub next_block_height: i32,
 }
+
 
 
 impl<'a> TransactionBuilder<'a> {
@@ -79,6 +85,11 @@ void TransactionBuilder::AddSaplingSpend(
                              value: &CAmount,
                              meme: &String,
     ) {
+
+    }
+
+    //AddTransparentOutput
+    pub fn add_transparent_output(&self, address: TxDestination, amount: &CAmount) {
 
     }
 }

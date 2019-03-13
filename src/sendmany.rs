@@ -35,9 +35,13 @@ use crate::key::key_management::{
 
 use crate::transaction_builder::TransactionBuilder;
 use crate::other::sanity_check::SanityChecker;
-use crate::key::key_store::KeyStore;
+use crate::key::key_store::{
+    KeyStore, TxDestination,
+};
 
-use crate::key::key_store::decode_payment_address;
+use crate::key::key_store::{
+    decode_payment_address, decode_destination,
+};
 
 //static mut pMainWallet: Wallet = Wallet::new();
 
@@ -310,7 +314,10 @@ impl<'a> SendManyOperation<'a> {
         //            auto address = DecodeDestination(outputAddress);
         //            builder_.AddTransparentOutput(address, amount);
         //        }
-
+        for (address, amount, memo) in self.t_outputs_.iter() {
+            let addr = decode_destination(address);
+            self.transaction_builder_.add_transparent_output(addr.unwrap(), amount);
+        }
 
 
         println!("In sendmany");
