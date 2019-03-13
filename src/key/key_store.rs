@@ -17,6 +17,11 @@ pub struct KeyStore {
     //mapSaplingIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
 }
 
+
+pub fn decode_payment_address(address: &String) -> Option<SaplingPaymentAddress> {
+    None
+}
+
 impl KeyStore {
 
     pub fn new() -> Self {
@@ -27,10 +32,6 @@ impl KeyStore {
 
     pub fn decode_transparent_destination(&self, address: &String) -> bool {
         false
-    }
-
-    fn decode_payment_address(address: &String) -> Option<SaplingPaymentAddress> {
-        None
     }
 
     //if (!isfromtaddr_) {

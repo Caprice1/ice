@@ -9,8 +9,10 @@ use pairing::{
     bls12_381::{Bls12, Fr, FrRepr},
 };
 
-use zip32::FullViewingKey;
-use zip32::ExtendedSpendingKey;
+use zip32::{
+    FullViewingKey, ExtendedSpendingKey, OutgoingViewingKey,
+};
+
 
 pub struct SaplingIncomingViewingKey {
 
@@ -19,6 +21,8 @@ pub struct SaplingIncomingViewingKey {
 pub type SaplingExtendedSpendingKey = ExtendedSpendingKey;
 
 pub type SaplingExpandedSpendingKey = ExpandedSpendingKey<Bls12>;
+
+pub type SaplingOutgoingViewingKey = OutgoingViewingKey;
 
 pub type SaplingPaymentAddress = PaymentAddress<Bls12>;
 

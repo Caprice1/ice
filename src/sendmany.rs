@@ -37,6 +37,8 @@ use crate::transaction_builder::TransactionBuilder;
 use crate::other::sanity_check::SanityChecker;
 use crate::key::key_store::KeyStore;
 
+use crate::key::key_store::decode_payment_address;
+
 //static mut pMainWallet: Wallet = Wallet::new();
 
 //SaplingNote
@@ -247,9 +249,6 @@ impl<'a> SendManyOperation<'a> {
 
     pub fn main_impl(&self) {
 
-        //let sk = self.spendingkey_;
-        //let expsk = sk;
-
 
         let wallet = &self.transaction_builder_.wallet;
         let mut target_amount = 100;
@@ -279,6 +278,39 @@ impl<'a> SendManyOperation<'a> {
                 }
             }
         }
+
+        //// Add Sapling outputs
+        //        for (auto r : z_outputs_) {
+        //            auto address = std::get<0>(r);
+        //            auto value = std::get<1>(r);
+        //            auto hexMemo = std::get<2>(r);
+        //
+        //            auto addr = DecodePaymentAddress(address);
+        //            assert(boost::get<libzcash::SaplingPaymentAddress>(&addr) != nullptr);
+        //            auto to = boost::get<libzcash::SaplingPaymentAddress>(addr);
+        //
+        //            auto memo = get_memo_from_hex_string(hexMemo);
+        //
+        //            builder_.AddSaplingOutput(ovk, to, value, memo);
+        //        }
+
+        let ovk = &self.spendingkey_.ovk;
+
+        for (address, value, memo) in self.z_outputs_.iter() {
+            let to = decode_payment_address(address);
+            self.transaction_builder_.add_sapling_output(ovk, to.unwrap(), value, memo);
+
+        }
+
+        //// Add transparent outputs
+        //        for (auto r : t_outputs_) {
+        //            auto outputAddress = std::get<0>(r);
+        //            auto amount = std::get<1>(r);
+        //
+        //            auto address = DecodeDestination(outputAddress);
+        //            builder_.AddTransparentOutput(address, amount);
+        //        }
+
 
 
         println!("In sendmany");

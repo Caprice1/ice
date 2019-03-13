@@ -2,13 +2,15 @@
 use bigint::U256;
 
 use crate::sendmany::{
-    SpendDescriptionInfo, OutputDescriptionInfo
+    SpendDescriptionInfo, OutputDescriptionInfo, CAmount
 };
 
 use crate::key::key_management::{
     SaplingIncomingViewingKey,
     SaplingExpandedSpendingKey,
     SaplingNote,
+    SaplingPaymentAddress,
+    SaplingOutgoingViewingKey,
 };
 
 use crate::incremental_tree::tree::SaplingWitness;
@@ -59,6 +61,23 @@ void TransactionBuilder::AddSaplingSpend(
                              note:  &SaplingNote,
                              anchor: U256,
                              witness: &&SaplingWitness,
+    ) {
+
+    }
+
+    //void TransactionBuilder::AddSaplingOutput(
+    //    uint256 ovk,
+    //    libzcash::SaplingPaymentAddress to,
+    //    CAmount value,
+    //    std::array<unsigned char, ZC_MEMO_SIZE> memo)
+    //{
+
+
+    pub fn add_sapling_output(&self,
+                             ovk: &SaplingOutgoingViewingKey,
+                             to: SaplingPaymentAddress,
+                             value: &CAmount,
+                             meme: &String,
     ) {
 
     }
