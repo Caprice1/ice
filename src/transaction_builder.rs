@@ -25,7 +25,7 @@ use crate::wallet::Wallet;
 pub struct TransactionBuilder<'a> {
     pub spends: Vec<SpendDescriptionInfo>,
     pub outputs: Vec<OutputDescriptionInfo>,
-    pub wallet: &'a Wallet<'a>,
+    pub wallet: &'a Wallet,
     pub next_block_height: i32,
 }
 
@@ -53,7 +53,7 @@ void TransactionBuilder::AddSaplingSpend(
     mtx.valueBalance += note.value();
 }
 */
-    pub fn new(height: i32, wallet: &'a Wallet) -> Self {
+    pub fn new(height: i32 , wallet: &'a Wallet) -> Self {
         TransactionBuilder {
             spends: Vec::new(),
             outputs: Vec::new(),
@@ -90,6 +90,10 @@ void TransactionBuilder::AddSaplingSpend(
 
     //AddTransparentOutput
     pub fn add_transparent_output(&self, address: TxDestination, amount: &CAmount) {
+
+    }
+
+    pub fn build(&self) {
 
     }
 }

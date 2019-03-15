@@ -69,7 +69,7 @@ pub struct SaplingOutPoint
 }
 
 
-pub struct SaplingNoteData<'a>
+pub struct SaplingNoteData
 {
     /*
     std::list<SaplingWitness> witnesses;
@@ -78,13 +78,30 @@ pub struct SaplingNoteData<'a>
     boost::optional<uint256> nullifier;
     */
 
-    pub witnesses: LinkedList<&'a SaplingWitness>,
+    pub witnesses: LinkedList<SaplingWitness>,
 
-    pub witnessHeight: u64,
+    pub witnessHeight: i32,
 
     pub ivk: SaplingIncomingViewingKey,
 
     pub nullifier: Option<U256>,
+}
+
+impl SaplingNoteData {
+
+    pub fn push_front(&mut self, witness: SaplingWitness) {
+        self.witnesses.push_front(witness);
+    }
+
+    pub fn pop_back(&mut self) {
+        self.witnesses.pop_back();
+    }
+
+    pub fn front(&self) -> Option<SaplingWitness> {
+        None
+    }
+
+
 }
 
 
@@ -109,7 +126,7 @@ pub fn show() {
 }
 
 pub struct SendMany<'a> {
-    pub main_wallet: &'a Wallet<'a>,
+    pub main_wallet: &'a Wallet,
     //pub address_management: AddressManagement,
     pub key_store: KeyStore,
     pub sanity_checker: SanityChecker,
@@ -167,7 +184,7 @@ impl<'a> SendMany<'a> {
         let next_block_height = 0;
 
         let builder =
-            TransactionBuilder::new(next_block_height, &self.main_wallet);
+            TransactionBuilder::new(next_block_height, self.main_wallet);
 
         //let spending_key_op =
         //    self.key_store.get_sapling_extended_spending_key(spending_key_option);
@@ -175,7 +192,7 @@ impl<'a> SendMany<'a> {
 
         let sendmany_operation
             = SendManyOperation::new(
-                &builder, fromaddress.clone(), taddrRecipients, zaddrRecipients,
+                builder, fromaddress.clone(), taddrRecipients, zaddrRecipients,
                 nMinDepth, nFee, expsk.unwrap());
 
         sendmany_operation.main_impl();
@@ -200,7 +217,7 @@ pub struct SendManyOperation<'a> {
     z_inputs_: Vec<SaplingNoteEntry>,
     t_outputs_: Vec<SendManyRecipient>,
     z_outputs_: Vec<SendManyRecipient>,
-    transaction_builder_: &'a TransactionBuilder<'a>,
+    transaction_builder_: TransactionBuilder<'a>,
 
     spendingkey_: SaplingExpandedSpendingKey,
 
@@ -226,7 +243,7 @@ impl<'a> SendManyOperation<'a> {
     //        CAmount fee = ASYNC_RPC_OPERATION_DEFAULT_MINERS_FEE,
     //        UniValue contextInfo = NullUniValue);
 
-    fn new(builder: &'a TransactionBuilder,
+    fn new(builder: TransactionBuilder<'a>,
            /*contextualTx: MutableTransaction,*/
            fromaddress: String,
            t_outputs: Vec<SendManyRecipient>,
@@ -269,7 +286,7 @@ impl<'a> SendManyOperation<'a> {
         let (ops, notes, _) = result.unwrap();
 
         let (witnesses, anchor)
-            = wallet.get_sapling_note_witnesses(&ops);
+            = wallet.get_sapling_note_witnesses(ops);
 
         //for witness_op in witnesses {
         for (i, witness_op) in witnesses.iter().enumerate() {
@@ -303,7 +320,6 @@ impl<'a> SendManyOperation<'a> {
         for (address, value, memo) in self.z_outputs_.iter() {
             let to = decode_payment_address(address);
             self.transaction_builder_.add_sapling_output(ovk, to.unwrap(), value, memo);
-
         }
 
         //// Add transparent outputs
@@ -318,6 +334,11 @@ impl<'a> SendManyOperation<'a> {
             let addr = decode_destination(address);
             self.transaction_builder_.add_transparent_output(addr.unwrap(), amount);
         }
+
+
+        self.transaction_builder_.build();
+
+        //TODO, Send out transaction
 
 
         println!("In sendmany");

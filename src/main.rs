@@ -6,6 +6,7 @@ mod incremental_tree;
 mod my;
 mod key;
 mod other;
+mod block_chain;
 
 
 use std::thread;

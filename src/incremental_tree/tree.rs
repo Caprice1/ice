@@ -79,3 +79,5 @@ impl<H> IncrementalWitness<H> {
 
 
 pub type SaplingWitness = IncrementalWitness<U256>;
+
+pub type SaplingMerkleTree = IncrementalMerkleTree<U256>;
