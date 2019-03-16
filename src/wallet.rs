@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 use bigint::U256;
 
-use crate::transaction::Transaction;
+use crate::transaction::WalletTransaction;
 use crate::sendmany::SaplingOutPoint;
 use crate::incremental_tree::tree::{
     SaplingWitness, SaplingMerkleTree,
@@ -13,14 +13,17 @@ use crate::block_chain::{
 use crate::transaction::NoteDataMap;
 use crate::my::constants::WITNESS_CACHE_SIZE;
 
+use crate::key::key_management::SaplingOutputDescription;
 
 pub struct Wallet {
-    pub map_wallet: HashMap<U256, Transaction>,
+    pub map_wallet: HashMap<U256, WalletTransaction>,
+    nWitnessCacheSize: usize,
 }
 
 impl Wallet{
     pub fn new() -> Self {
         Wallet{
+            nWitnessCacheSize: 0,
             map_wallet: HashMap::new(),
         }
     }
@@ -59,29 +62,63 @@ impl Wallet{
     //                                     SproutMerkleTree& sproutTree,
     //                                     SaplingMerkleTree& saplingTree)
     //{
-    pub fn increment_note_witnesses(&self, pindex: &BlockIndex, pblockIn: &Block, saplingTree: &SaplingMerkleTree) {
+    pub fn increment_note_witnesses(&mut self, pindex: &BlockIndex, pblockIn: &Block, saplingTree: &SaplingMerkleTree) {
+        for (_, tx) in self.map_wallet.iter_mut() {
+            copy_previous_witnesses(&mut tx.mapSaplingData, pindex.nHeight, self.nWitnessCacheSize);
+        }
+        if self.nWitnessCacheSize < WITNESS_CACHE_SIZE {
+            self.nWitnessCacheSize += 1;
+        }
 
+        for tx in pblockIn.vtx.iter() {
+            let hash = tx.hash;
+            let tx_is_ours = self.map_wallet.contains_key(&hash);
+            for (i, item) in tx.v_shielded_output.iter().enumerate() {
+
+            }
+        }
+
+
+
+        //for (const CTransaction& tx : pblock->vtx) {
+        //        auto hash = tx.GetHash();
+        //        bool txIsOurs = mapWallet.count(hash);
+        //        // Sapling
+        //        for (uint32_t i = 0; i < tx.vShieldedOutput.size(); i++) {
+        //            const uint256& note_commitment = tx.vShieldedOutput[i].cm;
+        //            saplingTree.append(note_commitment);
+        //
+        //            // Increment existing witnesses
+        //            for (std::pair<const uint256, CWalletTx>& wtxItem : mapWallet) {
+        //                ::AppendNoteCommitment(wtxItem.second.mapSaplingNoteData, pindex->nHeight, nWitnessCacheSize, note_commitment);
+        //            }
+        //
+        //            // If this is our note, witness it
+        //            if (txIsOurs) {
+        //                SaplingOutPoint outPoint {hash, i};
+        //                ::WitnessNoteIfMine(mapWallet[hash].mapSaplingNoteData, pindex->nHeight, nWitnessCacheSize, outPoint, saplingTree.witness());
+        //            }
+        //        }
+        //    }
     }
 
-    fn copy_previous_witnesses(noteDataMap: &mut NoteDataMap , indexHeight: i32, nWitnessCacheSize: usize) {
-        for (op, nd) in noteDataMap.iter_mut() {
-            if nd.witnessHeight < indexHeight {
-                assert!(nWitnessCacheSize >= nd.witnesses.len(), true);
-                assert!(nd.witnessHeight == -1 || nd.witnessHeight == indexHeight-1);
-                //let mut mut_nd = nd;
-                if nd.witnesses.len() > 0 {
-                    //nd.push_front(nd.witnesses.front().unwrap());
-                    nd.push_front(nd.front().unwrap())
-                }
-                if nd.witnesses.len() > WITNESS_CACHE_SIZE {
-                    nd.pop_back();
-                }
+
+
+}
+
+fn copy_previous_witnesses(noteDataMap: &mut NoteDataMap , indexHeight: i32, nWitnessCacheSize: usize) {
+    for (op, nd) in noteDataMap.iter_mut() {
+        if nd.witnessHeight < indexHeight {
+            assert!(nWitnessCacheSize >= nd.witnesses.len(), true);
+            assert!(nd.witnessHeight == -1 || nd.witnessHeight == indexHeight-1);
+            if nd.witnesses.len() > 0 {
+                nd.push_front(nd.front().unwrap())
+            }
+            if nd.witnesses.len() > WITNESS_CACHE_SIZE {
+                nd.pop_back();
             }
         }
     }
-
-
-
 }
 
 pub fn show() {

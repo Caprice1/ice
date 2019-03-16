@@ -13,6 +13,10 @@ use zip32::{
     FullViewingKey, ExtendedSpendingKey, OutgoingViewingKey,
 };
 
+use zcash_primitives::transaction::components::{
+    SpendDescription, OutputDescription
+};
+
 
 pub struct SaplingIncomingViewingKey {
 
@@ -29,3 +33,7 @@ pub type SaplingPaymentAddress = PaymentAddress<Bls12>;
 pub type SaplingFullViewKey = FullViewingKey<Bls12>;
 
 pub type SaplingNote = Note<Bls12>;
+
+pub type SaplingSpendDescription = SpendDescription;
+
+pub type SaplingOutputDescription = OutputDescription;
