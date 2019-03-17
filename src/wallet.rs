@@ -1,6 +1,12 @@
 
+
+
 use std::collections::HashMap;
-use bigint::U256;
+//use bigint::U256;
+use pairing::{
+    bls12_381::{Bls12, Fr, FrRepr},
+    PrimeField,
+};
 
 use crate::transaction::WalletTransaction;
 use crate::sendmany::SaplingOutPoint;
@@ -13,10 +19,14 @@ use crate::block_chain::{
 use crate::transaction::NoteDataMap;
 use crate::my::constants::WITNESS_CACHE_SIZE;
 
-use crate::key::key_management::SaplingOutputDescription;
+use crate::key::key_management::{
+    SaplingOutputDescription, FrHash,
+};
+
+
 
 pub struct Wallet {
-    pub map_wallet: HashMap<U256, WalletTransaction>,
+    pub map_wallet: HashMap<FrHash, WalletTransaction>,
     nWitnessCacheSize: usize,
 }
 
@@ -29,8 +39,8 @@ impl Wallet{
     }
 
     pub fn get_sapling_note_witnesses(&self, notes: Vec<&SaplingOutPoint>)
-        -> (Vec<Option<&SaplingWitness>>, Option<U256>) {
-        let mut rt: Option<U256> = None;
+        -> (Vec<Option<&SaplingWitness>>, Option<FrHash>) {
+        let mut rt: Option<FrHash> = None;
 
         let mut witnesses=
         notes.iter().map(|note|
@@ -42,7 +52,7 @@ impl Wallet{
 
                                 let r = witness.root().unwrap();
 
-                                match rt {
+                                match rt.clone() {
                                     None => { rt = Some(r);}
                                     Some(root) => {assert_eq!(root, r);}
                                 }
@@ -63,43 +73,43 @@ impl Wallet{
     //                                     SaplingMerkleTree& saplingTree)
     //{
     pub fn increment_note_witnesses(&mut self, pindex: &BlockIndex, pblockIn: &Block, saplingTree: &SaplingMerkleTree) {
-        for (_, tx) in self.map_wallet.iter_mut() {
-            copy_previous_witnesses(&mut tx.mapSaplingData, pindex.nHeight, self.nWitnessCacheSize);
+        for (_, wtx) in self.map_wallet.iter_mut() {
+            copy_previous_witnesses(&mut wtx.mapSaplingData, pindex.nHeight, self.nWitnessCacheSize);
         }
         if self.nWitnessCacheSize < WITNESS_CACHE_SIZE {
             self.nWitnessCacheSize += 1;
         }
 
         for tx in pblockIn.vtx.iter() {
-            let hash = tx.hash;
-            let tx_is_ours = self.map_wallet.contains_key(&hash);
+            let hash = &tx.hash;
+            let tx_is_ours = self.map_wallet.contains_key(hash);
             for (i, item) in tx.v_shielded_output.iter().enumerate() {
+                //let repr = item.cmu.into_repr().as_ref();
+                //let note_commitement = U256::from(repr);
+                let cm = item.cmu;
+                let note_commitement = FrHash(cm);
+                let note_commitement_1 = note_commitement.clone();
+                let note_commitement_2 = note_commitement.clone();
+                saplingTree.append(note_commitement);
 
+
+
+                for (_, wtx) in self.map_wallet.iter_mut() {
+                    let cm = note_commitement_1.clone();
+                    append_note_commitement(&mut wtx.mapSaplingData, pindex.nHeight,
+                                        self.nWitnessCacheSize, cm);
+                }
+
+                if tx_is_ours {
+                    let t_hash = tx.hash.clone();
+                    let out_point = SaplingOutPoint{ hash: t_hash, n: i as u32};
+                    witness_note_if_mine(&mut self.map_wallet[&hash].mapSaplingData, pindex.nHeight,
+                                         self.nWitnessCacheSize, note_commitement_2,
+                                         out_point, saplingTree.witness().unwrap());
+                }
             }
         }
 
-
-
-        //for (const CTransaction& tx : pblock->vtx) {
-        //        auto hash = tx.GetHash();
-        //        bool txIsOurs = mapWallet.count(hash);
-        //        // Sapling
-        //        for (uint32_t i = 0; i < tx.vShieldedOutput.size(); i++) {
-        //            const uint256& note_commitment = tx.vShieldedOutput[i].cm;
-        //            saplingTree.append(note_commitment);
-        //
-        //            // Increment existing witnesses
-        //            for (std::pair<const uint256, CWalletTx>& wtxItem : mapWallet) {
-        //                ::AppendNoteCommitment(wtxItem.second.mapSaplingNoteData, pindex->nHeight, nWitnessCacheSize, note_commitment);
-        //            }
-        //
-        //            // If this is our note, witness it
-        //            if (txIsOurs) {
-        //                SaplingOutPoint outPoint {hash, i};
-        //                ::WitnessNoteIfMine(mapWallet[hash].mapSaplingNoteData, pindex->nHeight, nWitnessCacheSize, outPoint, saplingTree.witness());
-        //            }
-        //        }
-        //    }
     }
 
 
@@ -118,6 +128,34 @@ fn copy_previous_witnesses(noteDataMap: &mut NoteDataMap , indexHeight: i32, nWi
                 nd.pop_back();
             }
         }
+    }
+}
+
+fn append_note_commitement(noteDataMap: &mut NoteDataMap, indexHeight: i32,
+                           nWitnessCacheSize: usize, note_commitement: FrHash) {
+    for (_, nd) in noteDataMap.iter_mut() {
+        if nd.witnessHeight < indexHeight && nd.witnesses.len() > 0 {
+            assert!(nWitnessCacheSize >= nd.witnesses.len());
+            //nd.witnesses.front().
+            //    and_then(|witness| witness.append(note_commitement));
+            let cm = note_commitement.clone();
+            nd.witnesses.front().unwrap().append(cm);
+        }
+    }
+}
+
+fn witness_note_if_mine(noteDataMap: &mut NoteDataMap, indexHeight: i32,
+                        nWitnessCacheSize: usize, note_commitement: FrHash,
+                        key: SaplingOutPoint, witness: SaplingWitness) {
+    if noteDataMap.contains_key(&key) && noteDataMap[&key].witnessHeight < indexHeight {
+        let nd = noteDataMap[&key];
+        if nd.witnesses.len() > 0 {
+            info!("Inconsistent witness cache state found");
+            nd.witnesses.clear();
+        }
+        nd.push_front(witness);
+        //nd.witnessHeight = indexHeight - 1;
+        assert!(nWitnessCacheSize >= nd.witnesses.len());
     }
 }
 

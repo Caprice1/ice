@@ -9,6 +9,10 @@ mod other;
 mod block_chain;
 
 
+#[macro_use]
+extern crate log;
+
+
 use std::thread;
 use std::sync::mpsc;
 use std::io;

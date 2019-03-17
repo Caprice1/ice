@@ -11,6 +11,7 @@ use crate::key::key_management::{
     SaplingNote,
     SaplingPaymentAddress,
     SaplingOutgoingViewingKey,
+    FrHash,
 
 };
 
@@ -65,7 +66,7 @@ void TransactionBuilder::AddSaplingSpend(
     pub fn add_sapling_spend(&self,
                              expsk: &SaplingExpandedSpendingKey,
                              note:  &SaplingNote,
-                             anchor: U256,
+                             anchor: FrHash,
                              witness: &&SaplingWitness,
     ) {
 

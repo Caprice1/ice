@@ -8,6 +8,7 @@ extern crate pairing;
 
 use pairing::{
     bls12_381::{Bls12, Fr, FrRepr},
+    PrimeField,
 };
 
 use sapling_crypto::{
@@ -31,6 +32,7 @@ use crate::key::key_management::{
     SaplingExpandedSpendingKey,
     SaplingExtendedSpendingKey,
     SaplingNote,
+    FrHash,
 };
 
 use crate::transaction_builder::TransactionBuilder;
@@ -64,7 +66,7 @@ pub struct OutputDescriptionInfo {
 #[derive(PartialEq, Eq, Hash)]
 pub struct SaplingOutPoint
 {
-    pub hash: U256,
+    pub hash: FrHash, //U256,
     pub n: u32,
 }
 
@@ -100,6 +102,7 @@ impl SaplingNoteData {
     pub fn front(&self) -> Option<SaplingWitness> {
         None
     }
+
 
 
 }
@@ -293,8 +296,9 @@ impl<'a> SendManyOperation<'a> {
             match witness_op {
                 None => { panic!("No witness found");  }
                 Some(witness) => {
+                    let t_ancher = anchor.clone();
                     self.transaction_builder_.add_sapling_spend(
-                        &self.spendingkey_, notes[i], anchor.unwrap(), witness
+                        &self.spendingkey_, notes[i], t_ancher.unwrap(), witness
                     );
                 }
             }
