@@ -103,7 +103,9 @@ impl Wallet{
                 if tx_is_ours {
                     let t_hash = tx.hash.clone();
                     let out_point = SaplingOutPoint{ hash: t_hash, n: i as u32};
-                    witness_note_if_mine(&mut self.map_wallet[&hash].mapSaplingData, pindex.nHeight,
+                    let nd = self.map_wallet.get_mut(&hash).unwrap();
+
+                    witness_note_if_mine(&mut nd.mapSaplingData, pindex.nHeight,
                                          self.nWitnessCacheSize, note_commitement_2,
                                          out_point, saplingTree.witness().unwrap());
                 }
@@ -148,13 +150,13 @@ fn witness_note_if_mine(noteDataMap: &mut NoteDataMap, indexHeight: i32,
                         nWitnessCacheSize: usize, note_commitement: FrHash,
                         key: SaplingOutPoint, witness: SaplingWitness) {
     if noteDataMap.contains_key(&key) && noteDataMap[&key].witnessHeight < indexHeight {
-        let nd = noteDataMap[&key];
+        let nd = noteDataMap.get_mut(&key).unwrap();
         if nd.witnesses.len() > 0 {
             info!("Inconsistent witness cache state found");
             nd.witnesses.clear();
         }
         nd.push_front(witness);
-        //nd.witnessHeight = indexHeight - 1;
+        nd.witnessHeight = indexHeight - 1;
         assert!(nWitnessCacheSize >= nd.witnesses.len());
     }
 }
