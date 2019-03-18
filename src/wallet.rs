@@ -67,12 +67,43 @@ impl Wallet{
         (witnesses, rt)
     }
 
+    pub fn chain_tip(&mut self, pindex: &BlockIndex, pblock: &Block,
+                     saplingTree: &mut SaplingMerkleTree, added: bool) {
+        if added {
+            self.increment_note_witnesses(pindex, pblock, saplingTree);
+        } else {
+            self.decrement_note_witnesses(pindex);
+        }
+        self.update_sapling_nullifier_note_map_for_block(pblock); 
+    }
+
+    fn update_sapling_nullifier_note_map_for_block(&self, pblock: &Block) {
+
+    }
+
+    // void CWallet::UpdateSaplingNullifierNoteMapForBlock(const CBlock *pblock) {
+    //    LOCK(cs_wallet);
+    //
+    //    for (const CTransaction& tx : pblock->vtx) {
+    //        auto hash = tx.GetHash();
+    //        bool txIsOurs = mapWallet.count(hash);
+    //        if (txIsOurs) {
+    //            UpdateSaplingNullifierNoteMapWithTx(mapWallet[hash]);
+    //        }
+    //    }
+    //}
+
+    pub fn decrement_note_witnesses(&mut self, pindex: &BlockIndex) {
+
+    }
+
+
     //void CWallet::IncrementNoteWitnesses(const CBlockIndex* pindex,
     //                                     const CBlock* pblockIn,
     //                                     SproutMerkleTree& sproutTree,
     //                                     SaplingMerkleTree& saplingTree)
     //{
-    pub fn increment_note_witnesses(&mut self, pindex: &BlockIndex, pblockIn: &Block, saplingTree: &SaplingMerkleTree) {
+    pub fn increment_note_witnesses(&mut self, pindex: &BlockIndex, pblockIn: &Block, saplingTree: &mut SaplingMerkleTree) {
         for (_, wtx) in self.map_wallet.iter_mut() {
             copy_previous_witnesses(&mut wtx.mapSaplingData, pindex.nHeight, self.nWitnessCacheSize);
         }
@@ -93,7 +124,6 @@ impl Wallet{
                 saplingTree.append(note_commitement);
 
 
-
                 for (_, wtx) in self.map_wallet.iter_mut() {
                     let cm = note_commitement_1.clone();
                     append_note_commitement(&mut wtx.mapSaplingData, pindex.nHeight,
@@ -112,8 +142,11 @@ impl Wallet{
             }
         }
 
-    }
+        for (_, wtx) in self.map_wallet.iter_mut() {
+            update_witness_heights(&mut wtx.mapSaplingData, pindex.nHeight, self.nWitnessCacheSize);
+        }
 
+    }
 
 
 }
@@ -161,12 +194,17 @@ fn witness_note_if_mine(noteDataMap: &mut NoteDataMap, indexHeight: i32,
     }
 }
 
+fn update_witness_heights(noteDataMap: &mut NoteDataMap, indexHeight: i32, nWitnessCacheSize: usize) {
+    for (op, nd) in noteDataMap.iter_mut() {
+        if nd.witnessHeight < indexHeight {
+            nd.witnessHeight = indexHeight;
+            assert!(nWitnessCacheSize >= nd.witnesses.len());
+        }
+    }
+}
+
+
 pub fn show() {
     println!("Wallet show");
-
-
-
-
-
 
 }

@@ -11,12 +11,14 @@ use bigint::U256;
 
 pub type NoteDataMap =  HashMap<SaplingOutPoint, SaplingNoteData>;
 
+//Program cache
 pub struct WalletTransaction{
     //std::map<SaplingOutPoint, SaplingNoteData> mapSaplingData;
     pub mapSaplingData: NoteDataMap,
 
 }
 
+//In DB and network
 pub struct Transaction {
     pub hash: FrHash, //U256,
     pub v_shielded_spend: Vec<SaplingSpendDescription>,
