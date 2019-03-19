@@ -5,10 +5,13 @@ authors = ["= <=>"]
 edition = "2018"
 
 [dependencies]
-zip32 = { path = "../librustzcash/zip32" }
-pairing = { path = "../librustzcash/pairing" }
-librustzcash = { path = "../librustzcash/librustzcash" }
-zcash_primitives = { path = "../librustzcash/zcash_primitives" }
-sapling-crypto = { path = "../librustzcash/sapling-crypto" }
+zip32 = { path = "ct-lib/zip32" }
+pairing = { path = "ct-lib/pairing" }
+ff = { path = "ct-lib/ff" }
+librustzcash = { path = "ct-lib/librustzcash" }
+zcash_primitives = { path = "ct-lib/zcash_primitives" }
+sapling-crypto = { path = "ct-lib/sapling-crypto" }
+
+bech32 = "0.6.0"
 bigint = "1.0"
 log = "0.4"

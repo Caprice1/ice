@@ -1,9 +1,7 @@
-
 use bigint::U256;
-use pairing::{
-    bls12_381::{Bls12, Fr, FrRepr},
-    PrimeField,
-};
+use ff::PrimeField;
+use pairing::bls12_381::{Bls12, Fr, FrRepr};
+
 use crate::key::key_management::FrHash;
 
 /*pub trait IncrementalMerkleTreeTrait<H> {
@@ -13,21 +11,14 @@ use crate::key::key_management::FrHash;
     fn root(&self) -> H;
 }*/
 
-
 pub struct IncrementalMerkleTree<H> {
-
     pub tmp: Vec<H>,
-
 }
 
-
 impl<H> IncrementalMerkleTree<H> {
+    pub fn append(&self, hash: H) {}
 
-    pub fn append(&self, hash: H) {
-
-    }
-
-    pub fn witness(&self)-> Option<IncrementalWitness<H>> {
+    pub fn witness(&self) -> Option<IncrementalWitness<H>> {
         None
     }
 
@@ -40,16 +31,9 @@ impl<H> IncrementalMerkleTree<H> {
     }
 }
 
+pub struct MerklePath {}
 
-
-pub struct MerklePath {
-
-}
-
-impl MerklePath {
-
-}
-
+impl MerklePath {}
 
 /*pub trait IncrementalWitnessTrait<H>{
 
@@ -60,7 +44,6 @@ impl MerklePath {
     fn root(&self) -> H;
 }
 */
-
 
 pub struct IncrementalWitness<H> {
     pub tree: IncrementalMerkleTree<H>,
@@ -88,12 +71,8 @@ impl<H> IncrementalWitness<H> {
         None
     }
 
-    pub fn append(&self, hash: H) {
-
-    }
-
+    pub fn append(&self, hash: H) {}
 }
-
 
 pub type SaplingWitness = IncrementalWitness<FrHash>;
 
