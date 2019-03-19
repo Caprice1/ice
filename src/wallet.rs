@@ -74,12 +74,97 @@ impl Wallet{
         } else {
             self.decrement_note_witnesses(pindex);
         }
-        self.update_sapling_nullifier_note_map_for_block(pblock); 
+        self.update_sapling_nullifier_note_map_for_block(pblock);
     }
 
-    fn update_sapling_nullifier_note_map_for_block(&self, pblock: &Block) {
-
+    fn update_sapling_nullifier_note_map_for_block(&mut self, pblock: &Block) {
+        for tx in pblock.vtx.iter() {
+            let hash = &tx.hash;
+            let tx_is_ours = self.map_wallet.contains_key(hash);
+            if tx_is_ours {
+                let wtx = self.map_wallet.get_mut(hash);
+                //self.update_sapling_nullifier_note_map_with_tx(&mut wtx.unwrap());
+            }
+        }
     }
+    //            uint64_t position = nd.witnesses.front().position();
+    //            SaplingFullViewingKey fvk = mapSaplingFullViewingKeys.at(nd.ivk);
+    //            OutputDescription output = wtx.vShieldedOutput[op.n];
+    //            auto optPlaintext = SaplingNotePlaintext::decrypt(output.encCiphertext, nd.ivk, output.ephemeralKey, output.cm);
+    //            if (!optPlaintext) {
+    //                // An item in mapSaplingNoteData must have already been successfully decrypted,
+    //                // otherwise the item would not exist in the first place.
+    //                assert(false);
+    //            }
+    //            auto optNote = optPlaintext.get().note(nd.ivk);
+    //            if (!optNote) {
+    //                assert(false);
+    //            }
+    //            auto optNullifier = optNote.get().nullifier(fvk, position);
+    //            if (!optNullifier) {
+    //                // This should not happen.  If it does, maybe the position has been corrupted or miscalculated?
+    //                assert(false);
+    //            }
+    //            uint256 nullifier = optNullifier.get();
+    //            mapSaplingNullifiersToNotes[nullifier] = op;
+    //            item.second.nullifier = nullifier;
+
+    fn update_sapling_nullifier_note_map_with_tx(&mut self, wtx: &mut WalletTransaction) {
+
+        for (op, nd) in wtx.mapSaplingData.iter() {
+            if nd.witnesses.is_empty() {
+
+            } else {
+
+            }
+
+        }
+    }
+
+    ///**
+    // * Update mapSaplingNullifiersToNotes, computing the nullifier from a cached witness if necessary.
+    // */
+    //void CWallet::UpdateSaplingNullifierNoteMapWithTx(CWalletTx& wtx) {
+    //    LOCK(cs_wallet);
+    //
+    //    for (mapSaplingNoteData_t::value_type &item : wtx.mapSaplingNoteData) {
+    //        SaplingOutPoint op = item.first;
+    //        SaplingNoteData nd = item.second;
+    //
+    //        if (nd.witnesses.empty()) {
+    //            // If there are no witnesses, erase the nullifier and associated mapping.
+    //            if (item.second.nullifier) {
+    //                mapSaplingNullifiersToNotes.erase(item.second.nullifier.get());
+    //            }
+    //            item.second.nullifier = boost::none;
+    //        }
+    //        else {
+    //            uint64_t position = nd.witnesses.front().position();
+    //            SaplingFullViewingKey fvk = mapSaplingFullViewingKeys.at(nd.ivk);
+    //            OutputDescription output = wtx.vShieldedOutput[op.n];
+    //            auto optPlaintext = SaplingNotePlaintext::decrypt(output.encCiphertext, nd.ivk, output.ephemeralKey, output.cm);
+    //            if (!optPlaintext) {
+    //                // An item in mapSaplingNoteData must have already been successfully decrypted,
+    //                // otherwise the item would not exist in the first place.
+    //                assert(false);
+    //            }
+    //            auto optNote = optPlaintext.get().note(nd.ivk);
+    //            if (!optNote) {
+    //                assert(false);
+    //            }
+    //            auto optNullifier = optNote.get().nullifier(fvk, position);
+    //            if (!optNullifier) {
+    //                // This should not happen.  If it does, maybe the position has been corrupted or miscalculated?
+    //                assert(false);
+    //            }
+    //            uint256 nullifier = optNullifier.get();
+    //            mapSaplingNullifiersToNotes[nullifier] = op;
+    //            item.second.nullifier = nullifier;
+    //        }
+    //    }
+    //}
+
+
 
     // void CWallet::UpdateSaplingNullifierNoteMapForBlock(const CBlock *pblock) {
     //    LOCK(cs_wallet);
