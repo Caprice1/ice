@@ -1,4 +1,3 @@
-
 pub const ZC_MEMO_SIZE: usize = 512;
 
 pub const COINBASE_MATURITY: usize = 100;

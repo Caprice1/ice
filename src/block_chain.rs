@@ -1,4 +1,3 @@
-
 use crate::transaction::Transaction;
 
 //Things that need to be intergated

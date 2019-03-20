@@ -1,0 +1,4 @@
+[submodule "ct-lib"]
+	path = ct-lib
+	url = https://github.com/origolab/originis-ct-lib
+	branch = ice

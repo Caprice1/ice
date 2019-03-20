@@ -1,49 +1,32 @@
-
-
-
-extern crate zip32;
 extern crate pairing;
+extern crate zip32;
 
+use pairing::bls12_381::{Bls12, Fr, FrRepr};
 
+use ff::PrimeField;
 
-use pairing::{
-    bls12_381::{Bls12, Fr, FrRepr},
-    PrimeField,
-};
-
-use sapling_crypto::{
-    primitives::{Note, PaymentAddress},
-};
+use sapling_crypto::primitives::{Note, PaymentAddress};
 
 use bigint::U256;
 
-use std::collections::LinkedList;
 use std::cmp::Eq;
+use std::collections::LinkedList;
 use std::hash::{Hash, Hasher};
 
+use crate::incremental_tree::tree::SaplingWitness;
 use crate::my::constants::ZC_MEMO_SIZE;
 use crate::wallet::Wallet;
-use crate::incremental_tree::tree::{
-    SaplingWitness,
-};
 
 use crate::key::key_management::{
-    SaplingIncomingViewingKey,
-    SaplingExpandedSpendingKey,
-    SaplingExtendedSpendingKey,
+    FrHash, SaplingExpandedSpendingKey, SaplingExtendedSpendingKey, SaplingIncomingViewingKey,
     SaplingNote,
-    FrHash,
 };
 
-use crate::transaction_builder::TransactionBuilder;
+use crate::key::key_store::{KeyStore, TxDestination};
 use crate::other::sanity_check::SanityChecker;
-use crate::key::key_store::{
-    KeyStore, TxDestination,
-};
+use crate::transaction_builder::TransactionBuilder;
 
-use crate::key::key_store::{
-    decode_payment_address, decode_destination,
-};
+use crate::key::key_store::{decode_destination, decode_payment_address};
 
 //static mut pMainWallet: Wallet = Wallet::new();
 
@@ -60,26 +43,21 @@ pub struct OutputDescriptionInfo {
     pub ovk: U256,
     pub note: SaplingNote,
     pub memo: [char; ZC_MEMO_SIZE],
-
 }
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct SaplingOutPoint
-{
+pub struct SaplingOutPoint {
     pub hash: FrHash, //U256,
     pub n: u32,
 }
 
-
-pub struct SaplingNoteData
-{
+pub struct SaplingNoteData {
     /*
     std::list<SaplingWitness> witnesses;
     int witnessHeight;
     libzcash::SaplingIncomingViewingKey ivk;
     boost::optional<uint256> nullifier;
     */
-
     pub witnesses: LinkedList<SaplingWitness>,
 
     pub witnessHeight: i32,
@@ -90,7 +68,6 @@ pub struct SaplingNoteData
 }
 
 impl SaplingNoteData {
-
     pub fn push_front(&mut self, witness: SaplingWitness) {
         self.witnesses.push_front(witness);
     }
@@ -102,11 +79,7 @@ impl SaplingNoteData {
     pub fn front(&self) -> Option<SaplingWitness> {
         None
     }
-
-
-
 }
-
 
 pub struct SaplingNoteEntry {
     op: SaplingOutPoint,
@@ -125,7 +98,6 @@ pub fn show() {
     println!("sendmany show");
 
     let v = [1, 2, 3, 4, 5];
-
 }
 
 pub struct SendMany<'a> {
@@ -135,10 +107,8 @@ pub struct SendMany<'a> {
     pub sanity_checker: SanityChecker,
 }
 
-
 impl<'a> SendMany<'a> {
-
-    pub fn pre_send_many(&self, params:Vec<String>) {
+    pub fn pre_send_many(&self, params: Vec<String>) {
         println!("In sendmany");
 
         let len = params.len();
@@ -161,9 +131,8 @@ impl<'a> SendMany<'a> {
         let params = &params[1..];
         let fromaddress = &params[0];
         let is_tx = self.key_store.decode_transparent_destination(fromaddress);
-        let (payment_address, spending_key_option)
-            = self.key_store.decode_z_destination(fromaddress);
-
+        let (payment_address, spending_key_option) =
+            self.key_store.decode_z_destination(fromaddress);
 
         /*let outputs_str = params[2].split(",").collect::<Vec<_>>();
         if outputs_str.len() == 0 {
@@ -171,8 +140,8 @@ impl<'a> SendMany<'a> {
         }*/
 
         let outputs_str = &params[1];
-        let (zaddrRecipients, taddrRecipients, total_amount)
-            = self.key_store.decode_outputs(outputs_str);
+        let (zaddrRecipients, taddrRecipients, total_amount) =
+            self.key_store.decode_outputs(outputs_str);
 
         self.sanity_checker.check_transaction_size(&zaddrRecipients);
 
@@ -186,21 +155,25 @@ impl<'a> SendMany<'a> {
         //TODO
         let next_block_height = 0;
 
-        let builder =
-            TransactionBuilder::new(next_block_height, self.main_wallet);
+        let builder = TransactionBuilder::new(next_block_height, self.main_wallet);
 
         //let spending_key_op =
         //    self.key_store.get_sapling_extended_spending_key(spending_key_option);
-        let expsk: Option<SaplingExpandedSpendingKey> = spending_key_option.and_then(|spending_key: SaplingExtendedSpendingKey | Some(spending_key.expsk));
+        let expsk: Option<SaplingExpandedSpendingKey> = spending_key_option
+            .and_then(|spending_key: SaplingExtendedSpendingKey| Some(spending_key.expsk));
 
-        let sendmany_operation
-            = SendManyOperation::new(
-                builder, fromaddress.clone(), taddrRecipients, zaddrRecipients,
-                nMinDepth, nFee, expsk.unwrap());
+        let sendmany_operation = SendManyOperation::new(
+            builder,
+            fromaddress.clone(),
+            taddrRecipients,
+            zaddrRecipients,
+            nMinDepth,
+            nFee,
+            expsk.unwrap(),
+        );
 
         sendmany_operation.main_impl();
     }
-
 }
 
 pub struct SendManyOperation<'a> {
@@ -246,15 +219,17 @@ impl<'a> SendManyOperation<'a> {
     //        CAmount fee = ASYNC_RPC_OPERATION_DEFAULT_MINERS_FEE,
     //        UniValue contextInfo = NullUniValue);
 
-    fn new(builder: TransactionBuilder<'a>,
-           /*contextualTx: MutableTransaction,*/
-           fromaddress: String,
-           t_outputs: Vec<SendManyRecipient>,
-           z_outputs: Vec<SendManyRecipient>,
-           min_depth: i32,
-           fee: CAmount,
-           spendingkey_: SaplingExpandedSpendingKey,
-           /*contextInfo: */) -> Self {
+    fn new(
+        builder: TransactionBuilder<'a>,
+        /*contextualTx: MutableTransaction,*/
+        fromaddress: String,
+        t_outputs: Vec<SendManyRecipient>,
+        z_outputs: Vec<SendManyRecipient>,
+        min_depth: i32,
+        fee: CAmount,
+        spendingkey_: SaplingExpandedSpendingKey,
+        /*contextInfo: */
+    ) -> Self {
         SendManyOperation {
             transaction_builder_: builder,
             fromaddress_: fromaddress,
@@ -269,36 +244,40 @@ impl<'a> SendManyOperation<'a> {
         }
     }
 
-
-
     pub fn main_impl(&self) {
-
-
         let wallet = &self.transaction_builder_.wallet;
         let mut target_amount = 100;
-        let result = self.z_inputs_.iter().try_fold((vec![], vec![], 0),
-                                                |(mut a, mut b, s), t|
-                                                    if s < target_amount {
-                                                        a.push(&t.op);
-                                                        b.push(&t.note);
-                                                        Some((a, b, s+t.note.value))
-                                                    }
-                                                        else {None});
+        let result = self
+            .z_inputs_
+            .iter()
+            .try_fold((vec![], vec![], 0), |(mut a, mut b, s), t| {
+                if s < target_amount {
+                    a.push(&t.op);
+                    b.push(&t.note);
+                    Some((a, b, s + t.note.value))
+                } else {
+                    None
+                }
+            });
         assert_eq!(result.is_none(), false);
 
         let (ops, notes, _) = result.unwrap();
 
-        let (witnesses, anchor)
-            = wallet.get_sapling_note_witnesses(ops);
+        let (witnesses, anchor) = wallet.get_sapling_note_witnesses(ops);
 
         //for witness_op in witnesses {
         for (i, witness_op) in witnesses.iter().enumerate() {
             match witness_op {
-                None => { panic!("No witness found");  }
+                None => {
+                    panic!("No witness found");
+                }
                 Some(witness) => {
                     let t_ancher = anchor.clone();
                     self.transaction_builder_.add_sapling_spend(
-                        &self.spendingkey_, notes[i], t_ancher.unwrap(), witness
+                        &self.spendingkey_,
+                        notes[i],
+                        t_ancher.unwrap(),
+                        witness,
                     );
                 }
             }
@@ -323,7 +302,8 @@ impl<'a> SendManyOperation<'a> {
 
         for (address, value, memo) in self.z_outputs_.iter() {
             let to = decode_payment_address(address);
-            self.transaction_builder_.add_sapling_output(ovk, to.unwrap(), value, memo);
+            self.transaction_builder_
+                .add_sapling_output(ovk, to.unwrap(), value, memo);
         }
 
         //// Add transparent outputs
@@ -336,21 +316,14 @@ impl<'a> SendManyOperation<'a> {
         //        }
         for (address, amount, memo) in self.t_outputs_.iter() {
             let addr = decode_destination(address);
-            self.transaction_builder_.add_transparent_output(addr.unwrap(), amount);
+            self.transaction_builder_
+                .add_transparent_output(addr.unwrap(), amount);
         }
-
 
         self.transaction_builder_.build();
 
         //TODO, Send out transaction
 
-
         println!("In sendmany");
     }
 }
-
-
-
-
-
-
