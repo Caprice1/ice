@@ -1,33 +1,21 @@
-
-use std::hash::{
-    Hash, Hasher
-};
+use std::hash::{Hash, Hasher};
 
 use zip32::ExpandedSpendingKey;
 
-use sapling_crypto::{
-    primitives::{Note, PaymentAddress},
-};
+use sapling_crypto::primitives::{Note, PaymentAddress};
 
-use pairing::{
-    bls12_381::{Bls12, Fr, FrRepr},
-    PrimeField,
-};
+use pairing::bls12_381::{Bls12, Fr, FrRepr};
 
-use zip32::{
-    FullViewingKey, ExtendedSpendingKey, OutgoingViewingKey,
-};
+use ff::PrimeField;
 
-use zcash_primitives::transaction::components::{
-    SpendDescription, OutputDescription
-};
+use zip32::{ExtendedSpendingKey, FullViewingKey, OutgoingViewingKey};
+
+use zcash_primitives::transaction::components::{OutputDescription, SpendDescription};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct FrHash(pub Fr);
 
-
 impl Hash for FrHash {
-
     fn hash<H: Hasher>(&self, state: &mut H) {
         //Fr::into_repr(&self.0)
         let arr = self.0.into_repr();
@@ -40,9 +28,7 @@ impl Hash for FrHash {
     }
 }
 
-pub struct SaplingIncomingViewingKey {
-
-}
+pub struct SaplingIncomingViewingKey {}
 
 pub type SaplingExtendedSpendingKey = ExtendedSpendingKey;
 
@@ -59,3 +45,6 @@ pub type SaplingNote = Note<Bls12>;
 pub type SaplingSpendDescription = SpendDescription;
 
 pub type SaplingOutputDescription = OutputDescription;
+
+// 11(d) + 32(pk_d)
+pub const PAYMENT_ADDRESS_LENGTH: usize = 43;

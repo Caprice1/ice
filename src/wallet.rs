@@ -1,85 +1,78 @@
-
-
-
 use std::collections::HashMap;
 //use bigint::U256;
-use pairing::{
-    bls12_381::{Bls12, Fr, FrRepr},
-    PrimeField,
-};
+use ff::PrimeField;
+use pairing::bls12_381::{Bls12, Fr, FrRepr};
 
-use crate::transaction::WalletTransaction;
-use crate::sendmany::SaplingOutPoint;
-use crate::incremental_tree::tree::{
-    SaplingWitness, SaplingMerkleTree,
-};
-use crate::block_chain::{
-    Block, BlockIndex,
-};
-use crate::transaction::NoteDataMap;
+use crate::block_chain::{Block, BlockIndex};
+use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
 use crate::my::constants::WITNESS_CACHE_SIZE;
+use crate::sendmany::SaplingOutPoint;
+use crate::transaction::NoteDataMap;
+use crate::transaction::WalletTransaction;
 
-use crate::key::key_management::{
-    SaplingOutputDescription, FrHash,
-};
-
-
+use crate::key::key_management::{FrHash, SaplingOutputDescription};
 
 pub struct Wallet {
     pub map_wallet: HashMap<FrHash, WalletTransaction>,
     nWitnessCacheSize: usize,
 }
 
-impl Wallet{
+impl Wallet {
     pub fn new() -> Self {
-        Wallet{
+        Wallet {
             nWitnessCacheSize: 0,
             map_wallet: HashMap::new(),
         }
     }
 
-    pub fn get_sapling_note_witnesses(&self, notes: Vec<&SaplingOutPoint>)
-        -> (Vec<Option<&SaplingWitness>>, Option<FrHash>) {
+    pub fn get_sapling_note_witnesses(
+        &self,
+        notes: Vec<&SaplingOutPoint>,
+    ) -> (Vec<Option<&SaplingWitness>>, Option<FrHash>) {
         let mut rt: Option<FrHash> = None;
 
-        let mut witnesses=
-        notes.iter().map(|note|
-            {
-                self.map_wallet.get(&note.hash).and_then(
-                    |tx| tx.mapSaplingData.get(&note).and_then(
-                        |data| data.witnesses.front().and_then(
-                            |witness| {
+        let mut witnesses = notes
+            .iter()
+            .map(|note| {
+                self.map_wallet.get(&note.hash).and_then(|tx| {
+                    tx.mapSaplingData.get(&note).and_then(|data| {
+                        data.witnesses.front().and_then(|witness| {
+                            let r = witness.root().unwrap();
 
-                                let r = witness.root().unwrap();
-
-                                match rt.clone() {
-                                    None => { rt = Some(r);}
-                                    Some(root) => {assert_eq!(root, r);}
+                            match rt.clone() {
+                                None => {
+                                    rt = Some(r);
                                 }
-                                Some(witness)
+                                Some(root) => {
+                                    assert_eq!(root, r);
+                                }
                             }
-                        )
-                    )
-                )
-            }
-        ).collect::<Vec<_>>();
+                            Some(witness)
+                        })
+                    })
+                })
+            })
+            .collect::<Vec<_>>();
 
         (witnesses, rt)
     }
 
-    pub fn chain_tip(&mut self, pindex: &BlockIndex, pblock: &Block,
-                     saplingTree: &mut SaplingMerkleTree, added: bool) {
+    pub fn chain_tip(
+        &mut self,
+        pindex: &BlockIndex,
+        pblock: &Block,
+        saplingTree: &mut SaplingMerkleTree,
+        added: bool,
+    ) {
         if added {
             self.increment_note_witnesses(pindex, pblock, saplingTree);
         } else {
             self.decrement_note_witnesses(pindex);
         }
-        self.update_sapling_nullifier_note_map_for_block(pblock); 
+        self.update_sapling_nullifier_note_map_for_block(pblock);
     }
 
-    fn update_sapling_nullifier_note_map_for_block(&self, pblock: &Block) {
-
-    }
+    fn update_sapling_nullifier_note_map_for_block(&self, pblock: &Block) {}
 
     // void CWallet::UpdateSaplingNullifierNoteMapForBlock(const CBlock *pblock) {
     //    LOCK(cs_wallet);
@@ -93,19 +86,25 @@ impl Wallet{
     //    }
     //}
 
-    pub fn decrement_note_witnesses(&mut self, pindex: &BlockIndex) {
-
-    }
-
+    pub fn decrement_note_witnesses(&mut self, pindex: &BlockIndex) {}
 
     //void CWallet::IncrementNoteWitnesses(const CBlockIndex* pindex,
     //                                     const CBlock* pblockIn,
     //                                     SproutMerkleTree& sproutTree,
     //                                     SaplingMerkleTree& saplingTree)
     //{
-    pub fn increment_note_witnesses(&mut self, pindex: &BlockIndex, pblockIn: &Block, saplingTree: &mut SaplingMerkleTree) {
+    pub fn increment_note_witnesses(
+        &mut self,
+        pindex: &BlockIndex,
+        pblockIn: &Block,
+        saplingTree: &mut SaplingMerkleTree,
+    ) {
         for (_, wtx) in self.map_wallet.iter_mut() {
-            copy_previous_witnesses(&mut wtx.mapSaplingData, pindex.nHeight, self.nWitnessCacheSize);
+            copy_previous_witnesses(
+                &mut wtx.mapSaplingData,
+                pindex.nHeight,
+                self.nWitnessCacheSize,
+            );
         }
         if self.nWitnessCacheSize < WITNESS_CACHE_SIZE {
             self.nWitnessCacheSize += 1;
@@ -123,39 +122,55 @@ impl Wallet{
                 let note_commitement_2 = note_commitement.clone();
                 saplingTree.append(note_commitement);
 
-
                 for (_, wtx) in self.map_wallet.iter_mut() {
                     let cm = note_commitement_1.clone();
-                    append_note_commitement(&mut wtx.mapSaplingData, pindex.nHeight,
-                                        self.nWitnessCacheSize, cm);
+                    append_note_commitement(
+                        &mut wtx.mapSaplingData,
+                        pindex.nHeight,
+                        self.nWitnessCacheSize,
+                        cm,
+                    );
                 }
 
                 if tx_is_ours {
                     let t_hash = tx.hash.clone();
-                    let out_point = SaplingOutPoint{ hash: t_hash, n: i as u32};
+                    let out_point = SaplingOutPoint {
+                        hash: t_hash,
+                        n: i as u32,
+                    };
                     let nd = self.map_wallet.get_mut(&hash).unwrap();
 
-                    witness_note_if_mine(&mut nd.mapSaplingData, pindex.nHeight,
-                                         self.nWitnessCacheSize, note_commitement_2,
-                                         out_point, saplingTree.witness().unwrap());
+                    witness_note_if_mine(
+                        &mut nd.mapSaplingData,
+                        pindex.nHeight,
+                        self.nWitnessCacheSize,
+                        note_commitement_2,
+                        out_point,
+                        saplingTree.witness().unwrap(),
+                    );
                 }
             }
         }
 
         for (_, wtx) in self.map_wallet.iter_mut() {
-            update_witness_heights(&mut wtx.mapSaplingData, pindex.nHeight, self.nWitnessCacheSize);
+            update_witness_heights(
+                &mut wtx.mapSaplingData,
+                pindex.nHeight,
+                self.nWitnessCacheSize,
+            );
         }
-
     }
-
-
 }
 
-fn copy_previous_witnesses(noteDataMap: &mut NoteDataMap , indexHeight: i32, nWitnessCacheSize: usize) {
+fn copy_previous_witnesses(
+    noteDataMap: &mut NoteDataMap,
+    indexHeight: i32,
+    nWitnessCacheSize: usize,
+) {
     for (op, nd) in noteDataMap.iter_mut() {
         if nd.witnessHeight < indexHeight {
             assert!(nWitnessCacheSize >= nd.witnesses.len(), true);
-            assert!(nd.witnessHeight == -1 || nd.witnessHeight == indexHeight-1);
+            assert!(nd.witnessHeight == -1 || nd.witnessHeight == indexHeight - 1);
             if nd.witnesses.len() > 0 {
                 nd.push_front(nd.front().unwrap())
             }
@@ -166,8 +181,12 @@ fn copy_previous_witnesses(noteDataMap: &mut NoteDataMap , indexHeight: i32, nWi
     }
 }
 
-fn append_note_commitement(noteDataMap: &mut NoteDataMap, indexHeight: i32,
-                           nWitnessCacheSize: usize, note_commitement: FrHash) {
+fn append_note_commitement(
+    noteDataMap: &mut NoteDataMap,
+    indexHeight: i32,
+    nWitnessCacheSize: usize,
+    note_commitement: FrHash,
+) {
     for (_, nd) in noteDataMap.iter_mut() {
         if nd.witnessHeight < indexHeight && nd.witnesses.len() > 0 {
             assert!(nWitnessCacheSize >= nd.witnesses.len());
@@ -179,9 +198,14 @@ fn append_note_commitement(noteDataMap: &mut NoteDataMap, indexHeight: i32,
     }
 }
 
-fn witness_note_if_mine(noteDataMap: &mut NoteDataMap, indexHeight: i32,
-                        nWitnessCacheSize: usize, note_commitement: FrHash,
-                        key: SaplingOutPoint, witness: SaplingWitness) {
+fn witness_note_if_mine(
+    noteDataMap: &mut NoteDataMap,
+    indexHeight: i32,
+    nWitnessCacheSize: usize,
+    note_commitement: FrHash,
+    key: SaplingOutPoint,
+    witness: SaplingWitness,
+) {
     if noteDataMap.contains_key(&key) && noteDataMap[&key].witnessHeight < indexHeight {
         let nd = noteDataMap.get_mut(&key).unwrap();
         if nd.witnesses.len() > 0 {
@@ -194,7 +218,11 @@ fn witness_note_if_mine(noteDataMap: &mut NoteDataMap, indexHeight: i32,
     }
 }
 
-fn update_witness_heights(noteDataMap: &mut NoteDataMap, indexHeight: i32, nWitnessCacheSize: usize) {
+fn update_witness_heights(
+    noteDataMap: &mut NoteDataMap,
+    indexHeight: i32,
+    nWitnessCacheSize: usize,
+) {
     for (op, nd) in noteDataMap.iter_mut() {
         if nd.witnessHeight < indexHeight {
             nd.witnessHeight = indexHeight;
@@ -203,8 +231,6 @@ fn update_witness_heights(noteDataMap: &mut NoteDataMap, indexHeight: i32, nWitn
     }
 }
 
-
 pub fn show() {
     println!("Wallet show");
-
 }

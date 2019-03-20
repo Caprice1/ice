@@ -1,46 +1,37 @@
+mod block_chain;
+mod incremental_tree;
+mod key;
+mod my;
+mod other;
 mod sendmany;
 mod transaction;
 mod transaction_builder;
 mod wallet;
-mod incremental_tree;
-mod my;
-mod key;
-mod other;
-mod block_chain;
-
 
 #[macro_use]
 extern crate log;
 
-
-use std::thread;
-use std::sync::mpsc;
 use std::io;
+use std::sync::mpsc;
+use std::thread;
 //use std::vec::Vec;
 
 use crate::sendmany::SendMany;
 
-
-use crate::wallet::Wallet;
-use crate::other::sanity_check::SanityChecker;
 use crate::key::key_store::KeyStore;
-
+use crate::other::sanity_check::SanityChecker;
+use crate::wallet::Wallet;
 
 fn main() {
     sendmany::show();
     wallet::show();
 
-
-
-
     let (tx, rx) = mpsc::channel();
 
-
     thread::spawn(move || {
-
         let wallet = Wallet::new();
         //let address_management = AddressManagement::new();
-        let sanity_checker= SanityChecker::new();
+        let sanity_checker = SanityChecker::new();
         let key_store = KeyStore::new();
 
         let sender = SendMany {
@@ -54,13 +45,15 @@ fn main() {
         for item in rx {
             println!("Received: {}", item);
             let s = item as String;
-            let params = s.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
+            let params = s
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>();
 
             sender.pre_send_many(params);
         }
         println!("Work queue thread end");
     });
-
 
     while true {
         //Take user action(sendTransaction etc)
@@ -76,14 +69,8 @@ fn main() {
         }
     }
 
-
     println!("Start success");
-
-
 }
 
 #[cfg(test)]
-mod test {
-
-}
-
+mod test {}

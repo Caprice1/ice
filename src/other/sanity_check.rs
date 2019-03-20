@@ -1,12 +1,8 @@
-
 use crate::sendmany::CAmount;
 
-pub struct SanityChecker {
-
-}
+pub struct SanityChecker {}
 
 impl SanityChecker {
-
     pub fn new() -> Self {
         SanityChecker {}
     }
@@ -44,7 +40,6 @@ impl SanityChecker {
         false
     }
 
-
     /*
     // Minimum confirmations
     int nMinDepth = 1;
@@ -58,7 +53,6 @@ impl SanityChecker {
     pub fn get_check_mindepth(&self, params: &[String]) -> i32 {
         0
     }
-
 
     /*
     // Fee in Zatoshis, not currency format)
@@ -84,7 +78,7 @@ impl SanityChecker {
             if (nFee > nTotalOut) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Fee %s is greater than the sum of outputs %s and also greater than the default fee", FormatMoney(nFee), FormatMoney(nTotalOut)));
             }
-	    }
+        }
     }
     */
     pub fn get_check_fee(&self, params: &[String]) -> CAmount {
