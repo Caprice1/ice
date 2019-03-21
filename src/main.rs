@@ -7,6 +7,8 @@ mod sendmany;
 mod transaction;
 mod transaction_builder;
 mod wallet;
+mod main_impl;
+mod coins;
 
 #[macro_use]
 extern crate log;
@@ -21,6 +23,8 @@ use crate::sendmany::SendMany;
 use crate::key::key_store::KeyStore;
 use crate::other::sanity_check::SanityChecker;
 use crate::wallet::Wallet;
+use crate::coins::CoinViewCache;
+
 
 fn main() {
     sendmany::show();
@@ -29,10 +33,12 @@ fn main() {
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        let wallet = Wallet::new();
+        let pcoins_tip = CoinViewCache::new();
+        let wallet = Wallet::new(pcoins_tip);
         //let address_management = AddressManagement::new();
         let sanity_checker = SanityChecker::new();
         let key_store = KeyStore::new();
+
 
         let sender = SendMany {
             main_wallet: &wallet,
@@ -71,6 +77,7 @@ fn main() {
 
     println!("Start success");
 }
+
 
 #[cfg(test)]
 mod test {}

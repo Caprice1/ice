@@ -11,6 +11,7 @@ use crate::key::key_management::FrHash;
     fn root(&self) -> H;
 }*/
 
+#[derive(Clone)]
 pub struct IncrementalMerkleTree<H> {
     pub tmp: Vec<H>,
 }
@@ -22,13 +23,14 @@ impl<H> IncrementalMerkleTree<H> {
         None
     }
 
-    fn path(&self, filler_hashs: Vec<H>) -> Option<MerklePath> {
+    pub fn path(&self, filler_hashs: Vec<H>) -> Option<MerklePath> {
         None
     }
 
-    fn root(&self) -> Option<H> {
+    pub fn root(&self) -> Option<H> {
         None
     }
+
 }
 
 pub struct MerklePath {}

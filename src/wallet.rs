@@ -8,21 +8,72 @@ use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
 use crate::my::constants::WITNESS_CACHE_SIZE;
 use crate::sendmany::SaplingOutPoint;
 use crate::transaction::NoteDataMap;
-use crate::transaction::WalletTransaction;
+use crate::transaction::{
+    WalletTransaction, Transaction,
+};
 
 use crate::key::key_management::{FrHash, SaplingOutputDescription};
+use crate::main_impl::{
+   read_block_from_disk,
+};
+use crate::coins::CoinViewCache;
 
 pub struct Wallet {
     pub map_wallet: HashMap<FrHash, WalletTransaction>,
     nWitnessCacheSize: usize,
+    n_time_first_key: i64,
+
+    pub pcoins_tip: CoinViewCache,
 }
 
+use bigint::U256;
+
+
 impl Wallet {
-    pub fn new() -> Self {
+    pub fn new(pcoins_tip: CoinViewCache) -> Self {
         Wallet {
             nWitnessCacheSize: 0,
             map_wallet: HashMap::new(),
+            n_time_first_key: 0,
+
+            pcoins_tip: pcoins_tip,
         }
+    }
+
+    //TOOD, omit something for GUI
+    pub fn scan_for_wallet_transactions(&mut self, pindex_start: Option<BlockIndex>, f_update: bool) {
+        let mut ret = 0;
+        let pindex = pindex_start;
+        let pindex_1 = pindex.clone();
+        let pindex_2 = pindex.clone();
+
+        let mut my_tx_hashes = Vec::new();
+        while !pindex.is_none()
+            && self.n_time_first_key > 0
+            //TODO
+            //&& pindex.unwrap().get_block_time() < self.n_time_first_key - 7200
+        {
+            //pindex = chain_active.next(pindex);
+        }
+        ShowProgress("Rescanning...", 0);
+        while !pindex_1.is_none() {
+            let pindex_3 = pindex_2.clone();
+            let block = read_block_from_disk(pindex_3.unwrap()).unwrap();
+            for tx in block.vtx.iter() {
+                if self.add_to_wallet_if_invlving_me(tx, &block, f_update) {
+                    my_tx_hashes.push(tx.hash.clone());
+                    ret += 1;
+                }
+            }
+        }
+        //if !pindex.is_none() && pindex.unwrap().pprev {
+            //pcoins_tip.get_sapling_anchor_at()
+            //assert!();
+        //}
+    }
+
+    pub fn add_to_wallet_if_invlving_me(&self, tx: &Transaction, block: &Block, f_update: bool) -> bool{
+        false
     }
 
     pub fn get_sapling_note_witnesses(
@@ -105,17 +156,14 @@ impl Wallet {
     //            item.second.nullifier = nullifier;
 
     fn update_sapling_nullifier_note_map_with_tx(&mut self, wtx: &mut WalletTransaction) {
-
         for (op, nd) in wtx.mapSaplingData.iter() {
             if nd.witnesses.is_empty() {
 
             } else {
 
             }
-
         }
     }
-    
 
     ///**
     // * Update mapSaplingNullifiersToNotes, computing the nullifier from a cached witness if necessary.
@@ -159,8 +207,6 @@ impl Wallet {
     //        }
     //    }
     //}
-
-
 
     // void CWallet::UpdateSaplingNullifierNoteMapForBlock(const CBlock *pblock) {
     //    LOCK(cs_wallet);
@@ -317,6 +363,11 @@ fn update_witness_heights(
             assert!(nWitnessCacheSize >= nd.witnesses.len());
         }
     }
+}
+
+//TODO
+fn ShowProgress(title: &str, n: i32) {
+
 }
 
 pub fn show() {
