@@ -1,12 +1,7 @@
-
-use crate::key::key_management::{
-    FrHash
-};
-use crate::incremental_tree::tree::{
-   SaplingMerkleTree,
-};
-use std::collections::hash_map::HashMap;
+use crate::incremental_tree::tree::SaplingMerkleTree;
+use crate::key::key_management::FrHash;
 use crate::transaction::Transaction;
+use std::collections::hash_map::HashMap;
 
 use bigint::U256;
 
@@ -17,9 +12,8 @@ pub struct AnchorsSaplingCacheEntry {
 }
 
 impl AnchorsSaplingCacheEntry {
-
     fn new(tree: SaplingMerkleTree) -> Self {
-        AnchorsSaplingCacheEntry{
+        AnchorsSaplingCacheEntry {
             entered: false,
             flags: char::from(0),
             tree: tree,
@@ -34,7 +28,7 @@ struct NullifiersCacheEntry {
 
 impl NullifiersCacheEntry {
     fn new() -> Self {
-        NullifiersCacheEntry{
+        NullifiersCacheEntry {
             entered: false,
             dirty: false,
         }
@@ -45,30 +39,23 @@ type AnchorsSaplingMap = HashMap<FrHash, AnchorsSaplingCacheEntry>;
 type NullifiersMap = HashMap<U256, NullifiersCacheEntry>;
 
 pub trait CoinsView {
-
     //Retrieve the tree (Sapling) at a particular anchored root in the chain
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree>;
 
     //Determine whether a nullifier is spent or not
     fn get_nullifier(&mut self, nullifier: FrHash) -> bool;
-
 }
 
 //
-pub struct CoinViewDB {
-
-}
+pub struct CoinViewDB {}
 
 impl CoinViewDB {
     pub fn new() -> Self {
-        CoinViewDB {
-
-        }
+        CoinViewDB {}
     }
 }
 
 impl CoinsView for CoinViewDB {
-
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree> {
         None
     }
@@ -85,7 +72,6 @@ pub struct CoinViewCache {
 }
 
 impl CoinViewCache {
-
     pub fn new() -> Self {
         CoinViewCache {
             cached_sapling_anchors: AnchorsSaplingMap::new(),
@@ -107,13 +93,13 @@ impl CoinViewCache {
 }
 
 impl CoinsView for CoinViewCache {
-
     //bool CCoinsViewCache::GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const {
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree> {
-
         let res = self.cached_sapling_anchors.get(&rt);
         match res {
-            None => {return None; }
+            None => {
+                return None;
+            }
             Some(ref entry) => {
                 if entry.entered {
                     return Some(entry.tree.clone());
@@ -122,9 +108,11 @@ impl CoinsView for CoinViewCache {
         }
 
         let tree = self.base.get_sapling_anchor_at(rt.clone());
-        let  tree_clone= tree.clone();
+        let tree_clone = tree.clone();
         match tree_clone {
-            None => { return None; }
+            None => {
+                return None;
+            }
             Some(t) => {
                 let entry = AnchorsSaplingCacheEntry::new(t);
                 let rt_clone = rt.clone();
@@ -133,8 +121,6 @@ impl CoinsView for CoinViewCache {
             }
         }
 
-
-
         //Some(tree.unwrap())
     }
 
@@ -142,19 +128,3 @@ impl CoinsView for CoinViewCache {
         false
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

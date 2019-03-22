@@ -12,7 +12,7 @@ use zip32::{ExtendedSpendingKey, FullViewingKey, OutgoingViewingKey};
 
 use zcash_primitives::transaction::components::{OutputDescription, SpendDescription};
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub struct FrHash(pub Fr);
 
 impl Hash for FrHash {

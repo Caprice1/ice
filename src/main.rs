@@ -1,14 +1,14 @@
 mod block_chain;
+mod coins;
 mod incremental_tree;
 mod key;
+mod main_impl;
 mod my;
 mod other;
 mod sendmany;
 mod transaction;
 mod transaction_builder;
 mod wallet;
-mod main_impl;
-mod coins;
 
 #[macro_use]
 extern crate log;
@@ -20,11 +20,10 @@ use std::thread;
 
 use crate::sendmany::SendMany;
 
+use crate::coins::CoinViewCache;
 use crate::key::key_store::KeyStore;
 use crate::other::sanity_check::SanityChecker;
 use crate::wallet::Wallet;
-use crate::coins::CoinViewCache;
-
 
 fn main() {
     sendmany::show();
@@ -38,7 +37,6 @@ fn main() {
         //let address_management = AddressManagement::new();
         let sanity_checker = SanityChecker::new();
         let key_store = KeyStore::new();
-
 
         let sender = SendMany {
             main_wallet: &wallet,
@@ -77,7 +75,6 @@ fn main() {
 
     println!("Start success");
 }
-
 
 #[cfg(test)]
 mod test {}

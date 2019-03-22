@@ -8,15 +8,11 @@ use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
 use crate::my::constants::WITNESS_CACHE_SIZE;
 use crate::sendmany::SaplingOutPoint;
 use crate::transaction::NoteDataMap;
-use crate::transaction::{
-    WalletTransaction, Transaction,
-};
+use crate::transaction::{Transaction, WalletTransaction};
 
+use crate::coins::{CoinViewCache, CoinsView};
 use crate::key::key_management::{FrHash, SaplingOutputDescription};
-use crate::main_impl::{
-   read_block_from_disk,
-};
-use crate::coins::CoinViewCache;
+use crate::main_impl::read_block_from_disk;
 
 pub struct Wallet {
     pub map_wallet: HashMap<FrHash, WalletTransaction>,
@@ -27,7 +23,6 @@ pub struct Wallet {
 }
 
 use bigint::U256;
-
 
 impl Wallet {
     pub fn new(pcoins_tip: CoinViewCache) -> Self {
@@ -41,38 +36,72 @@ impl Wallet {
     }
 
     //TOOD, omit something for GUI
-    pub fn scan_for_wallet_transactions(&mut self, pindex_start: Option<BlockIndex>, f_update: bool) {
+    pub fn scan_for_wallet_transactions(
+        &mut self,
+        pindex_start: Option<BlockIndex>,
+        f_update: bool,
+    ) {
         let mut ret = 0;
         let pindex = pindex_start;
         let pindex_1 = pindex.clone();
         let pindex_2 = pindex.clone();
 
         let mut my_tx_hashes = Vec::new();
-        while !pindex.is_none()
-            && self.n_time_first_key > 0
-            //TODO
-            //&& pindex.unwrap().get_block_time() < self.n_time_first_key - 7200
+        while !pindex.is_none() && self.n_time_first_key > 0
+        //TODO
+        //&& pindex.unwrap().get_block_time() < self.n_time_first_key - 7200
         {
             //pindex = chain_active.next(pindex);
         }
         ShowProgress("Rescanning...", 0);
-        while !pindex_1.is_none() {
-            let pindex_3 = pindex_2.clone();
-            let block = read_block_from_disk(pindex_3.unwrap()).unwrap();
-            for tx in block.vtx.iter() {
-                if self.add_to_wallet_if_invlving_me(tx, &block, f_update) {
-                    my_tx_hashes.push(tx.hash.clone());
-                    ret += 1;
+
+        /*let f = |pi: &Option<BlockIndex>| {
+            pi.and_then(|p|read_block_from_disk(&p) )
+        };
+        let block = f(&pindex);
+        */
+
+        let block = {
+            let t_pindex = pindex.clone();
+            t_pindex.and_then(|p| read_block_from_disk(&p))
+        };
+
+        let block = {
+            block.and_then(|b| {
+                for tx in b.vtx.iter() {
+                    if self.add_to_wallet_if_invlving_me(tx, &b, f_update) {
+                        my_tx_hashes.push(tx.hash.clone());
+                        ret += 1;
+                    }
                 }
-            }
-        }
-        //if !pindex.is_none() && pindex.unwrap().pprev {
-            //pcoins_tip.get_sapling_anchor_at()
-            //assert!();
-        //}
+                Some(b)
+            })
+        };
+
+        let mut sapling_tree = {
+            let t_pindex = pindex.clone();
+            t_pindex.and_then(|p| {
+                p.pprev.and_then(|pp| {
+                    self.pcoins_tip
+                        .get_sapling_anchor_at(pp.hash_final_sapling_root)
+                })
+            })
+        };
+
+        self.chain_tip(
+            &pindex.unwrap(),
+            &block.unwrap(),
+            &mut sapling_tree.unwrap(),
+            true,
+        );
     }
 
-    pub fn add_to_wallet_if_invlving_me(&self, tx: &Transaction, block: &Block, f_update: bool) -> bool{
+    pub fn add_to_wallet_if_invlving_me(
+        &self,
+        tx: &Transaction,
+        block: &Block,
+        f_update: bool,
+    ) -> bool {
         false
     }
 
@@ -366,9 +395,7 @@ fn update_witness_heights(
 }
 
 //TODO
-fn ShowProgress(title: &str, n: i32) {
-
-}
+fn ShowProgress(title: &str, n: i32) {}
 
 pub fn show() {
     println!("Wallet show");

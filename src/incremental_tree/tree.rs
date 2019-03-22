@@ -30,7 +30,6 @@ impl<H> IncrementalMerkleTree<H> {
     pub fn root(&self) -> Option<H> {
         None
     }
-
 }
 
 pub struct MerklePath {}
