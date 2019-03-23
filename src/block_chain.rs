@@ -8,14 +8,23 @@ pub struct Block {
 }
 
 #[derive(Clone)]
-pub struct BlockIndex<'a> {
+pub struct BlockIndex {
     pub nHeight: i32,
-    pub pprev: Option<&'a BlockIndex<'a>>,
+    pub pprev: Option<Box<BlockIndex>>,
     pub hash_final_sapling_root: FrHash,
 }
 
-impl<'a> BlockIndex<'a> {
+impl BlockIndex {
     pub fn get_block_time(&self) -> i64 {
         0
+    }
+    pub fn get_pprev(self) -> Option<BlockIndex> {
+        match self.pprev {
+            None => None,
+            Some(b) => {
+                let t = b;
+                Some(*t)
+            }
+        }
     }
 }

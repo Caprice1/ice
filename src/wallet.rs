@@ -42,9 +42,7 @@ impl Wallet {
         f_update: bool,
     ) {
         let mut ret = 0;
-        let pindex = pindex_start;
-        let pindex_1 = pindex.clone();
-        let pindex_2 = pindex.clone();
+        let mut pindex = pindex_start;
 
         let mut my_tx_hashes = Vec::new();
         while !pindex.is_none() && self.n_time_first_key > 0
@@ -55,48 +53,49 @@ impl Wallet {
         }
         ShowProgress("Rescanning...", 0);
 
-        /*let f = |pi: &Option<BlockIndex>| {
-            pi.and_then(|p|read_block_from_disk(&p) )
-        };
-        let block = f(&pindex);
-        */
+        while !pindex.is_none() {
+            let block = {
+                let t_pindex = pindex.clone();
+                t_pindex.and_then(|p| read_block_from_disk(&p))
+            };
 
-        let block = {
-            let t_pindex = pindex.clone();
-            t_pindex.and_then(|p| read_block_from_disk(&p))
-        };
-
-        let block = {
-            block.and_then(|b| {
-                for tx in b.vtx.iter() {
-                    if self.add_to_wallet_if_invlving_me(tx, &b, f_update) {
-                        my_tx_hashes.push(tx.hash.clone());
-                        ret += 1;
+            let block = {
+                block.and_then(|b| {
+                    for tx in b.vtx.iter() {
+                        if self.add_to_wallet_if_invloving_me(tx, &b, f_update) {
+                            my_tx_hashes.push(tx.hash.clone());
+                            ret += 1;
+                        }
                     }
-                }
-                Some(b)
-            })
-        };
-
-        let mut sapling_tree = {
-            let t_pindex = pindex.clone();
-            t_pindex.and_then(|p| {
-                p.pprev.and_then(|pp| {
-                    self.pcoins_tip
-                        .get_sapling_anchor_at(pp.hash_final_sapling_root)
+                    Some(b)
                 })
-            })
-        };
+            };
 
-        self.chain_tip(
-            &pindex.unwrap(),
-            &block.unwrap(),
-            &mut sapling_tree.unwrap(),
-            true,
-        );
+            let mut sapling_tree = {
+                let t_pindex = pindex.clone();
+                t_pindex.and_then(|p| {
+                    p.pprev.and_then(|pp| {
+                        self.pcoins_tip
+                            .get_sapling_anchor_at(pp.hash_final_sapling_root)
+                    })
+                })
+            };
+
+            {
+                let t_pindex = pindex.clone();
+                self.chain_tip(
+                    &t_pindex.unwrap(),
+                    &block.unwrap(),
+                    &mut sapling_tree.unwrap(),
+                    true,
+                );
+            }
+
+            pindex = pindex.unwrap().get_pprev();
+        }
     }
 
-    pub fn add_to_wallet_if_invlving_me(
+    pub fn add_to_wallet_if_invloving_me(
         &self,
         tx: &Transaction,
         block: &Block,
