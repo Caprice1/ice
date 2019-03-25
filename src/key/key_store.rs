@@ -13,8 +13,8 @@ use zcash_primitives::JUBJUB;
 
 pub struct KeyStore {
     mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
-    mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewKey>,
-    mapSpendingKeys: HashMap<SaplingFullViewKey, SaplingExtendedSpendingKey>,
+    mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewingKey>,
+    mapSpendingKeys: HashMap<SaplingFullViewingKey, SaplingExtendedSpendingKey>,
 }
 
 // Struct used to covert between u5 vector and u8 vector.
@@ -102,7 +102,7 @@ pub fn decode_payment_address(address: &str) -> Option<SaplingPaymentAddress> {
 
     let mut diversifier = [0u8; 11];
     diversifier.copy_from_slice(&u8_vec[0..11]);
-    let mut pk_d = &u8_vec[11..PAYMENT_ADDRESS_LENGTH];
+    let pk_d = &u8_vec[11..PAYMENT_ADDRESS_LENGTH];
     let pk_d = match edwards::Point::<Bls12, Unknown>::read(&mut pk_d.as_ref(), &JUBJUB) {
         Ok(p) => p,
         Err(_) => return None,
@@ -182,43 +182,43 @@ impl KeyStore {
         (Vec::new(), Vec::new(), 0)
     }
 
-    //bool CBasicKeyStore::GetSaplingExtendedSpendingKey(const libzcash::SaplingPaymentAddress &addr,
-    //                                    libzcash::SaplingExtendedSpendingKey &extskOut) const {
-    //    libzcash::SaplingIncomingViewingKey ivk;
-    //    libzcash::SaplingFullViewingKey fvk;
-    //
-    //    return GetSaplingIncomingViewingKey(addr, ivk) &&
-    //            GetSaplingFullViewingKey(ivk, fvk) &&
-    //            GetSaplingSpendingKey(fvk, extskOut);
-    //}
     pub fn get_sapling_extended_spending_key(
         &self,
-        address: SaplingPaymentAddress,
+        address: &SaplingPaymentAddress,
     ) -> Option<SaplingExtendedSpendingKey> {
-        //self.get_sapling_incomming_viewing_key(address).and_then
-        None
+        self.get_sapling_incomming_viewing_key(address).and_then(
+            |ivk| self.get_sapling_full_view_key(&ivk)).and_then(|fvk| self.get_sapling_spending_key(&fvk))
+        
     }
 
     pub fn get_sapling_incomming_viewing_key(
         &self,
-        address: SaplingPaymentAddress,
+        address: &SaplingPaymentAddress,
     ) -> Option<SaplingIncomingViewingKey> {
-        //self.mapSaplingIncomingViewKeys.get(address)
-        None
+        match self.mapIncomingViewKeys.get(address) {
+            Some(&v) => Some(v),
+            None => None,
+        }
     }
 
     pub fn get_sapling_full_view_key(
         &self,
         ivk: &SaplingIncomingViewingKey,
-    ) -> Option<SaplingFullViewKey> {
-        None
+    ) -> Option<SaplingFullViewingKey> {
+        match self.mapFullViewingKeys.get(ivk) {
+            Some(&v) => Some(v),
+            None => None,
+        }    
     }
 
     pub fn get_sapling_spending_key(
         &self,
-        fvk: &SaplingFullViewKey,
+        fvk: &SaplingFullViewingKey,
     ) -> Option<SaplingExtendedSpendingKey> {
-        None
+        match self.mapSpendingKeys.get(fvk) {
+            Some(&v) => Some(v),
+            None => None,
+        }    
     }
 }
 

@@ -38,7 +38,7 @@ pub type SaplingOutgoingViewingKey = OutgoingViewingKey;
 
 pub type SaplingPaymentAddress = PaymentAddress<Bls12>;
 
-pub type SaplingFullViewKey = FullViewingKey<Bls12>;
+pub type SaplingFullViewingKey = FullViewingKey<Bls12>;
 
 pub type SaplingNote = Note<Bls12>;
 
