@@ -24,6 +24,9 @@ use crate::coins::CoinViewCache;
 use crate::key::key_store::KeyStore;
 use crate::other::sanity_check::SanityChecker;
 use crate::wallet::Wallet;
+use crate::block_chain::{
+    ChainActive,
+};
 
 fn main() {
     sendmany::show();
@@ -32,8 +35,9 @@ fn main() {
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        let pcoins_tip = CoinViewCache::new();
-        let wallet = Wallet::new(pcoins_tip);
+        let chain_active = ChainActive::new();
+        let mut pcoins_tip = CoinViewCache::new();
+        let wallet = Wallet::new(&mut pcoins_tip, &chain_active);
         //let address_management = AddressManagement::new();
         let sanity_checker = SanityChecker::new();
         let key_store = KeyStore::new();

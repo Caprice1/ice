@@ -101,7 +101,7 @@ pub fn show() {
 }
 
 pub struct SendMany<'a> {
-    pub main_wallet: &'a Wallet,
+    pub main_wallet: &'a Wallet<'a>,
     //pub address_management: AddressManagement,
     pub key_store: KeyStore,
     pub sanity_checker: SanityChecker,

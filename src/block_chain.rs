@@ -19,12 +19,21 @@ impl BlockIndex {
         0
     }
     pub fn get_pprev(self) -> Option<BlockIndex> {
-        match self.pprev {
-            None => None,
-            Some(b) => {
-                let t = b;
-                Some(*t)
-            }
-        }
+        self.pprev.map(|b| *b)
+    }
+}
+
+pub struct ChainActive {
+
+}
+
+impl ChainActive {
+
+    pub fn new() -> Self {
+        ChainActive {}
+    }
+
+    pub fn next(&self, pindex: BlockIndex) -> Option<BlockIndex> {
+        None
     }
 }

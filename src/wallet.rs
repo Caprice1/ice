@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ff::PrimeField;
 use pairing::bls12_381::{Bls12, Fr, FrRepr};
 
-use crate::block_chain::{Block, BlockIndex};
+use crate::block_chain::{Block, BlockIndex, ChainActive};
 use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
 use crate::my::constants::WITNESS_CACHE_SIZE;
 use crate::sendmany::SaplingOutPoint;
@@ -14,24 +14,26 @@ use crate::coins::{CoinViewCache, CoinsView};
 use crate::key::key_management::{FrHash, SaplingOutputDescription};
 use crate::main_impl::read_block_from_disk;
 
-pub struct Wallet {
+pub struct Wallet<'a> {
     pub map_wallet: HashMap<FrHash, WalletTransaction>,
     nWitnessCacheSize: usize,
     n_time_first_key: i64,
 
-    pub pcoins_tip: CoinViewCache,
+    pub chain_active: &'a ChainActive,
+    pub pcoins_tip: &'a mut CoinViewCache,
 }
 
 use bigint::U256;
 
-impl Wallet {
-    pub fn new(pcoins_tip: CoinViewCache) -> Self {
+impl<'a> Wallet<'a> {
+    pub fn new(pcoins_tip: &'a mut CoinViewCache, chain_active: &'a ChainActive) -> Self {
         Wallet {
             nWitnessCacheSize: 0,
             map_wallet: HashMap::new(),
             n_time_first_key: 0,
 
-            pcoins_tip: pcoins_tip,
+            chain_active,
+            pcoins_tip,
         }
     }
 
@@ -45,7 +47,7 @@ impl Wallet {
         let mut pindex = pindex_start;
 
         let mut my_tx_hashes = Vec::new();
-        while !pindex.is_none() && self.n_time_first_key > 0
+        //while !pindex.is_none() && self.n_time_first_key > 0
         //TODO
         //&& pindex.unwrap().get_block_time() < self.n_time_first_key - 7200
         {
@@ -91,7 +93,8 @@ impl Wallet {
                 );
             }
 
-            pindex = pindex.unwrap().get_pprev();
+            //pindex = pindex.and_then(|i| i.get_pprev());
+            pindex = pindex.and_then(|i| self.chain_active.next(i));
         }
     }
 

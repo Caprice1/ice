@@ -16,7 +16,7 @@ use crate::wallet::Wallet;
 pub struct TransactionBuilder<'a> {
     pub spends: Vec<SpendDescriptionInfo>,
     pub outputs: Vec<OutputDescriptionInfo>,
-    pub wallet: &'a Wallet,
+    pub wallet: &'a Wallet<'a>,
     pub next_block_height: i32,
 }
 
