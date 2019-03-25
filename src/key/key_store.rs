@@ -16,7 +16,10 @@ pub struct KeyStore {
 //    SaplingFullViewingKeyMap mapSaplingFullViewingKeys;
 //    SaplingIncomingViewingKeyMap mapSaplingIncomingViewingKeys;
 
-//mapSaplingIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
+    mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
+    mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewKey>,
+    //mapSpendingKeys: HashMap<SaplingFullViewKey, ExtendedSpendingKey>,
+
 }
 
 // Struct used to covert between u5 vector and u8 vector.
@@ -141,7 +144,9 @@ pub fn decode_destination(address: &String) -> Option<TxDestination> {
 impl KeyStore {
     pub fn new() -> Self {
         KeyStore {
-            //mapSaplingIncomingViewKeys: HashMap::new(),
+            mapIncomingViewKeys: HashMap::new(),
+            mapFullViewingKeys: HashMap::new(),
+            //mapSpendingKeys: HashMap::new(),
         }
     }
 

@@ -2,7 +2,7 @@ use std::hash::{Hash, Hasher};
 
 use zip32::ExpandedSpendingKey;
 
-use sapling_crypto::primitives::{Note, PaymentAddress};
+use sapling_crypto::primitives::{Note, PaymentAddress, IncomeViewingKey};
 
 use pairing::bls12_381::{Bls12, Fr, FrRepr};
 
@@ -28,7 +28,7 @@ impl Hash for FrHash {
     }
 }
 
-pub struct SaplingIncomingViewingKey {}
+pub type SaplingIncomingViewingKey = IncomeViewingKey<Bls12>;
 
 pub type SaplingExtendedSpendingKey = ExtendedSpendingKey;
 
