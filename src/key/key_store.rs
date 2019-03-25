@@ -12,14 +12,9 @@ use std::collections::hash_map::HashMap;
 use zcash_primitives::JUBJUB;
 
 pub struct KeyStore {
-    //SaplingSpendingKeyMap mapSaplingSpendingKeys;
-//    SaplingFullViewingKeyMap mapSaplingFullViewingKeys;
-//    SaplingIncomingViewingKeyMap mapSaplingIncomingViewingKeys;
-
     mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
     mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewKey>,
-    //mapSpendingKeys: HashMap<SaplingFullViewKey, ExtendedSpendingKey>,
-
+    mapSpendingKeys: HashMap<SaplingFullViewKey, SaplingExtendedSpendingKey>,
 }
 
 // Struct used to covert between u5 vector and u8 vector.
@@ -146,7 +141,7 @@ impl KeyStore {
         KeyStore {
             mapIncomingViewKeys: HashMap::new(),
             mapFullViewingKeys: HashMap::new(),
-            //mapSpendingKeys: HashMap::new(),
+            mapSpendingKeys: HashMap::new(),
         }
     }
 
