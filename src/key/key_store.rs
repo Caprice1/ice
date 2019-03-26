@@ -182,16 +182,16 @@ impl KeyStore {
         (Vec::new(), Vec::new(), 0)
     }
 
-    pub fn get_sapling_extended_spending_key(
+    pub fn get_extended_spending_key(
         &self,
         address: &SaplingPaymentAddress,
     ) -> Option<SaplingExtendedSpendingKey> {
-        self.get_sapling_incomming_viewing_key(address).and_then(
-            |ivk| self.get_sapling_full_view_key(&ivk)).and_then(|fvk| self.get_sapling_spending_key(&fvk))
+        self.get_incoming_viewing_key(address).and_then(
+            |ivk| self.get_full_viewing_key(&ivk)).and_then(|fvk| self.get_spending_key(&fvk))
         
     }
 
-    pub fn get_sapling_incomming_viewing_key(
+    pub fn get_incoming_viewing_key(
         &self,
         address: &SaplingPaymentAddress,
     ) -> Option<SaplingIncomingViewingKey> {
@@ -201,7 +201,7 @@ impl KeyStore {
         }
     }
 
-    pub fn get_sapling_full_view_key(
+    pub fn get_full_viewing_key(
         &self,
         ivk: &SaplingIncomingViewingKey,
     ) -> Option<SaplingFullViewingKey> {
@@ -211,7 +211,7 @@ impl KeyStore {
         }    
     }
 
-    pub fn get_sapling_spending_key(
+    pub fn get_spending_key(
         &self,
         fvk: &SaplingFullViewingKey,
     ) -> Option<SaplingExtendedSpendingKey> {
@@ -219,6 +219,31 @@ impl KeyStore {
             Some(&v) => Some(v),
             None => None,
         }    
+    }
+
+    pub fn add_spending_key(
+        &mut self,
+        esk: SaplingExtendedSpendingKey,
+        address: SaplingPaymentAddress) -> bool {
+        let fvk = SaplingFullViewingKey::from_expanded_spending_key(&esk.expsk, &JUBJUB);
+        self.mapSpendingKeys.insert(fvk, esk);
+        return self.add_full_viewing_key(fvk, address);
+    }
+
+    pub fn add_full_viewing_key(
+        &mut self,
+        fvk: SaplingFullViewingKey,
+        address: SaplingPaymentAddress) -> bool {
+        let ivk = fvk.vk.ivk();
+        self.mapFullViewingKeys.insert(ivk, fvk);
+        return self.add_incoming_viewing_key(ivk, address);
+    }
+    pub fn add_incoming_viewing_key(
+        &mut self,
+        ivk: SaplingIncomingViewingKey,
+        address: SaplingPaymentAddress) -> bool {
+        self.mapIncomingViewKeys.insert(address, ivk);
+        true
     }
 }
 
