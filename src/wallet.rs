@@ -93,7 +93,6 @@ impl<'a> Wallet<'a> {
                 );
             }
 
-            //pindex = pindex.and_then(|i| i.get_pprev());
             pindex = pindex.and_then(|i| self.chain_active.next(i));
         }
     }
