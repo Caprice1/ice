@@ -81,6 +81,8 @@ fn main() {
 
 //UniValue z_getnewaddress(const UniValue& params, bool fHelp)
 //Most important
+
+//TODO, For wu xin
 fn z_getnewaddress() {}
 
 fn z_listunspent() {}
