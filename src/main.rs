@@ -37,13 +37,11 @@ fn main() {
         let mut pcoins_tip = CoinViewCache::new();
         let wallet = Wallet::new(&mut pcoins_tip, &chain_active);
 
-        //let address_management = AddressManagement::new();
         let sanity_checker = SanityChecker::new();
         let key_store = KeyStore::new();
 
         let sender = SendMany {
             main_wallet: &wallet,
-            //address_management: address_management,
             sanity_checker: sanity_checker,
             key_store: key_store,
         };

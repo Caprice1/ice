@@ -325,20 +325,15 @@ impl<'a> Wallet<'a> {
         }
     }
 
-
     //AddSaplingZKey,
     // support z_getnewaddress
     //TODO wu xin
-    pub fn add_sapling_z_key() {
-
-    }
+    pub fn add_sapling_z_key() {}
 
     //AddSpendingKeyToWallet,
     // support z_getnewaddress
     //TODO wu xin
-    pub fn add_spending_key_to_wallet() {
-
-    }
+    pub fn add_spending_key_to_wallet() {}
 
     //GetFilteredNotes(
     //    std::vector<SaplingNoteEntry>& saplingEntries,
@@ -348,10 +343,15 @@ impl<'a> Wallet<'a> {
     //    bool requireSpendingKey)
     // support z_listunspent
     //TODO hu yuan
-    pub fn get_filtered_notes() {
+    pub fn get_filtered_notes() {}
 
-    }
+    //bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet,
+    //support sendmany
+    pub fn create_transaction() {}
 
+    //bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
+    //suport sendmany
+    pub fn commit_transaction(wtx_new: WalletTransaction) {}
 }
 
 fn copy_previous_witnesses(
@@ -422,10 +422,6 @@ fn update_witness_heights(
         }
     }
 }
-
-
-
-
 
 //TODO
 fn ShowProgress(title: &str, n: i32) {}

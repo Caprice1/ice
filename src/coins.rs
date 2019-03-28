@@ -39,6 +39,8 @@ type AnchorsSaplingMap = HashMap<FrHash, AnchorsSaplingCacheEntry>;
 type NullifiersMap = HashMap<U256, NullifiersCacheEntry>;
 
 pub trait CoinsView {
+    fn get_best_anchor(&self) -> Option<FrHash>;
+
     //Retrieve the tree (Sapling) at a particular anchored root in the chain
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree>;
 
@@ -46,6 +48,8 @@ pub trait CoinsView {
     fn get_nullifier(&mut self, nullifier: FrHash) -> bool;
 
     fn push_anchor(&mut self, tree: SaplingMerkleTree);
+
+    fn set_best_block(&mut self, block_hash: U256);
 }
 
 //
@@ -57,7 +61,12 @@ impl CoinViewDB {
     }
 }
 
+//TODO, not necessary now
 impl CoinsView for CoinViewDB {
+    fn get_best_anchor(&self) -> Option<FrHash> {
+        None
+    }
+
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree> {
         None
     }
@@ -67,9 +76,13 @@ impl CoinsView for CoinViewDB {
     }
 
     fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
+
+    fn set_best_block(&mut self, block_hash: U256) {}
 }
 
 pub struct CoinViewCache {
+    //mutable uint256 hashSaplingAnchor;
+    hash_sapling_anchor: Option<FrHash>,
     cached_sapling_anchors: AnchorsSaplingMap,
     cached_sapling_nullifiers: NullifiersMap,
     base: CoinViewDB,
@@ -78,6 +91,7 @@ pub struct CoinViewCache {
 impl CoinViewCache {
     pub fn new() -> Self {
         CoinViewCache {
+            hash_sapling_anchor: None,
             cached_sapling_anchors: AnchorsSaplingMap::new(),
             cached_sapling_nullifiers: NullifiersMap::new(),
             base: CoinViewDB::new(),
@@ -97,6 +111,10 @@ impl CoinViewCache {
 }
 
 impl CoinsView for CoinViewCache {
+    fn get_best_anchor(&self) -> Option<FrHash> {
+        self.hash_sapling_anchor
+    }
+
     //bool CCoinsViewCache::GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const {
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree> {
         let res = self.cached_sapling_anchors.get(&rt);
@@ -133,4 +151,6 @@ impl CoinsView for CoinViewCache {
     }
 
     fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
+
+    fn set_best_block(&mut self, block_hash: U256) {}
 }
