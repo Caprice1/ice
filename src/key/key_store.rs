@@ -137,9 +137,9 @@ pub fn encode_payment_address(address: &SaplingPaymentAddress) -> String {
 pub type TxDestination = H160;
 
 pub fn decode_destination(address: &str) -> Option<TxDestination> {
-    match TxDestination::from_str(address.trim_start_matches("0x"))  {
+    match TxDestination::from_str(address.trim_start_matches("0x")) {
         Ok(add) => Some(add),
-        Err(_) => None
+        Err(_) => None,
     }
 }
 
@@ -155,7 +155,7 @@ impl KeyStore {
     pub fn decode_transparent_destination(&self, address: &str) -> bool {
         match decode_destination(address) {
             Some(_) => true,
-            None => false
+            None => false,
         }
     }
 
@@ -167,25 +167,26 @@ impl KeyStore {
         Option<SaplingExtendedSpendingKey>,
     ) {
         let payment_address = decode_payment_address(address);
-        match decode_payment_address(address)   {
+        match decode_payment_address(address) {
             Some(a) => (Some(a), self.get_extended_spending_key(&a)),
             None => (None, None),
         }
-        
     }
-
 
     pub fn decode_outputs(
         &self,
         aoutputs_str: &str,
     ) -> (Vec<SendManyRecipient>, Vec<SendManyRecipient>, CAmount) {
         let v: Vec<Value> = serde_json::from_str(aoutputs_str).unwrap();
-        let mut total : CAmount = 0;
+        let mut total: CAmount = 0;
         let mut t_recipients = Vec::new();
         let mut z_recipients = Vec::new();
-        for r in v  {
-            let recipient = (r["address"].as_str().unwrap().to_string(), 
-            r["amount"].as_u64().unwrap(), "".to_string());
+        for r in v {
+            let recipient = (
+                r["address"].as_str().unwrap().to_string(),
+                r["amount"].as_u64().unwrap(),
+                "".to_string(),
+            );
             total += recipient.1;
             if self.decode_transparent_destination(&recipient.0) {
                 t_recipients.push(recipient);
@@ -200,9 +201,9 @@ impl KeyStore {
         &self,
         address: &SaplingPaymentAddress,
     ) -> Option<SaplingExtendedSpendingKey> {
-        self.get_incoming_viewing_key(address).and_then(
-            |ivk| self.get_full_viewing_key(&ivk)).and_then(|fvk| self.get_spending_key(&fvk))
-        
+        self.get_incoming_viewing_key(address)
+            .and_then(|ivk| self.get_full_viewing_key(&ivk))
+            .and_then(|fvk| self.get_spending_key(&fvk))
     }
 
     pub fn get_incoming_viewing_key(
@@ -222,7 +223,7 @@ impl KeyStore {
         match self.mapFullViewingKeys.get(ivk) {
             Some(&v) => Some(v),
             None => None,
-        }    
+        }
     }
 
     pub fn get_spending_key(
@@ -232,13 +233,14 @@ impl KeyStore {
         match self.mapSpendingKeys.get(fvk) {
             Some(&v) => Some(v),
             None => None,
-        }    
+        }
     }
 
     pub fn add_spending_key(
         &mut self,
         esk: SaplingExtendedSpendingKey,
-        address: SaplingPaymentAddress) -> bool {
+        address: SaplingPaymentAddress,
+    ) -> bool {
         let fvk = SaplingFullViewingKey::from_expanded_spending_key(&esk.expsk, &JUBJUB);
         self.mapSpendingKeys.insert(fvk, esk);
         return self.add_full_viewing_key(fvk, address);
@@ -247,7 +249,8 @@ impl KeyStore {
     pub fn add_full_viewing_key(
         &mut self,
         fvk: SaplingFullViewingKey,
-        address: SaplingPaymentAddress) -> bool {
+        address: SaplingPaymentAddress,
+    ) -> bool {
         let ivk = fvk.vk.ivk();
         self.mapFullViewingKeys.insert(ivk, fvk);
         return self.add_incoming_viewing_key(ivk, address);
@@ -255,7 +258,8 @@ impl KeyStore {
     pub fn add_incoming_viewing_key(
         &mut self,
         ivk: SaplingIncomingViewingKey,
-        address: SaplingPaymentAddress) -> bool {
+        address: SaplingPaymentAddress,
+    ) -> bool {
         self.mapIncomingViewKeys.insert(address, ivk);
         true
     }
@@ -303,9 +307,15 @@ mod tests {
         assert_eq!(zaddr_recipients.len(), 1);
         assert_eq!(zaddr_recipients[0], ("ztfaW34Gj9FrnGUEf833ywDVL62NWXBM81u6EQnM6VR45eYnXhwztecW1SjxA7JrmAXKJhxhj3vDNEpVCQoSvVoSpmbhtjf".to_string(),
                                         5, "".to_string()));
-                                                assert_eq!(zaddr_recipients.len(), 1);
+        assert_eq!(zaddr_recipients.len(), 1);
         assert_eq!(taddr_recipients.len(), 1);
-        assert_eq!(taddr_recipients[0], ("0x793ea9692Ada1900fBd0B80FFFEc6E431fe8b391".to_string(),
-                                        6, "".to_string()));
+        assert_eq!(
+            taddr_recipients[0],
+            (
+                "0x793ea9692Ada1900fBd0B80FFFEc6E431fe8b391".to_string(),
+                6,
+                "".to_string()
+            )
+        );
     }
 }
