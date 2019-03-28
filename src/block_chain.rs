@@ -35,6 +35,4 @@ impl ChainActive {
     }
 }
 
-pub struct ValidationState {
-
-}
+pub struct ValidationState {}

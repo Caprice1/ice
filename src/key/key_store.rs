@@ -11,7 +11,6 @@ use sapling_crypto::jubjub::{edwards, Unknown};
 use std::collections::hash_map::HashMap;
 use zcash_primitives::JUBJUB;
 
-
 use std::collections::HashSet;
 
 pub struct KeyStore {
@@ -223,7 +222,6 @@ impl KeyStore {
     ) -> Option<SaplingExtendedSpendingKey> {
         None
     }
-
 
     //GetSaplingPaymentAddresses
     //TODO wu xin
