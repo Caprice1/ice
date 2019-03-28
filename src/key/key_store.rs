@@ -6,9 +6,13 @@ use crate::key::key_management::{
 use crate::sendmany::CAmount;
 use crate::sendmany::SendManyRecipient;
 use bech32::{u5, Bech32};
+use ethereum_types::H160;
 use pairing::bls12_381::Bls12;
 use sapling_crypto::jubjub::{edwards, Unknown};
+use serde_json;
+use serde_json::{Result, Value};
 use std::collections::hash_map::HashMap;
+use std::str::FromStr;
 use zcash_primitives::JUBJUB;
 
 pub struct KeyStore {
@@ -92,12 +96,10 @@ impl BitVec {
 pub fn decode_payment_address(address: &str) -> Option<SaplingPaymentAddress> {
     let b32_parsed = address.parse::<Bech32>().unwrap();
     let u5_vec = b32_parsed.data();
-    assert_eq!(
-        u5_vec.len(),
-        (PAYMENT_ADDRESS_LENGTH * 8 - 1 + 5) / 5,
-        "Incorrect address length."
-    );
-    let mut bit_vec = BitVec::from_u5_vec(u5_vec);
+    if u5_vec.len() != (PAYMENT_ADDRESS_LENGTH * 8 - 1 + 5) / 5 {
+        return None;
+    }
+    let bit_vec = BitVec::from_u5_vec(u5_vec);
     let u8_vec = bit_vec.to_u8(0, PAYMENT_ADDRESS_LENGTH);
 
     let mut diversifier = [0u8; 11];
@@ -130,10 +132,13 @@ pub fn encode_payment_address(address: &SaplingPaymentAddress) -> String {
     return encoded;
 }
 
-pub struct TxDestination {}
+pub type TxDestination = H160;
 
-pub fn decode_destination(address: &String) -> Option<TxDestination> {
-    None
+pub fn decode_destination(address: &str) -> Option<TxDestination> {
+    match TxDestination::from_str(address.trim_start_matches("0x"))  {
+        Ok(add) => Some(add),
+        Err(_) => None
+    }
 }
 
 impl KeyStore {
@@ -145,41 +150,48 @@ impl KeyStore {
         }
     }
 
-    pub fn decode_transparent_destination(&self, address: &String) -> bool {
-        false
+    pub fn decode_transparent_destination(&self, address: &str) -> bool {
+        match decode_destination(address) {
+            Some(_) => true,
+            None => false
+        }
     }
-
-    //if (!isfromtaddr_) {
-    //        auto address = DecodePaymentAddress(fromAddress);
-    //        if (IsValidPaymentAddress(address)) {
-    //            // We don't need to lock on the wallet as spending key related methods are thread-safe
-    //            if (!boost::apply_visitor(HaveSpendingKeyForPaymentAddress(pwalletMain), address)) {
-    //                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid from address, no spending key found for zaddr");
-    //            }
-    //
-    //            isfromzaddr_ = true;
-    //            frompaymentaddress_ = address;
-    //            spendingkey_ = boost::apply_visitor(GetSpendingKeyForPaymentAddress(pwalletMain), address).get();
-    //        } else {
-    //            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid from address");
-    //        }
-    //    }
 
     pub fn decode_z_destination(
         &self,
-        address: &String,
+        address: &str,
     ) -> (
         Option<SaplingPaymentAddress>,
         Option<SaplingExtendedSpendingKey>,
     ) {
-        (None, None)
+        let payment_address = decode_payment_address(address);
+        match decode_payment_address(address)   {
+            Some(a) => (Some(a), self.get_extended_spending_key(&a)),
+            None => (None, None),
+        }
+        
     }
+
 
     pub fn decode_outputs(
         &self,
-        aoutputs_str: &String,
+        aoutputs_str: &str,
     ) -> (Vec<SendManyRecipient>, Vec<SendManyRecipient>, CAmount) {
-        (Vec::new(), Vec::new(), 0)
+        let v: Vec<Value> = serde_json::from_str(aoutputs_str).unwrap();
+        let mut total : CAmount = 0;
+        let mut t_recipients = Vec::new();
+        let mut z_recipients = Vec::new();
+        for r in v  {
+            let recipient = (r["address"].as_str().unwrap().to_string(), 
+            r["amount"].as_u64().unwrap(), "".to_string());
+            total += recipient.1;
+            if self.decode_transparent_destination(&recipient.0) {
+                t_recipients.push(recipient);
+            } else {
+                z_recipients.push(recipient);
+            }
+        }
+        (z_recipients, t_recipients, total)
     }
 
     pub fn get_extended_spending_key(
@@ -263,5 +275,21 @@ mod tests {
             ),
             None => panic!("Can't decode address"),
         }
+    }
+
+    #[test]
+    fn test_decode_outputs() {
+        let output = r#"[{"address": "ztfaW34Gj9FrnGUEf833ywDVL62NWXBM81u6EQnM6VR45eYnXhwztecW1SjxA7JrmAXKJhxhj3vDNEpVCQoSvVoSpmbhtjf" ,"amount": 5}, 
+                         {"address": "0x793ea9692Ada1900fBd0B80FFFEc6E431fe8b391" ,"amount": 6}]"#;
+        let k = KeyStore::new();
+        let (zaddr_recipients, taddr_recipients, total_amount) = k.decode_outputs(output);
+        assert_eq!(total_amount, 11);
+        assert_eq!(zaddr_recipients.len(), 1);
+        assert_eq!(zaddr_recipients[0], ("ztfaW34Gj9FrnGUEf833ywDVL62NWXBM81u6EQnM6VR45eYnXhwztecW1SjxA7JrmAXKJhxhj3vDNEpVCQoSvVoSpmbhtjf".to_string(),
+                                        5, "".to_string()));
+                                                assert_eq!(zaddr_recipients.len(), 1);
+        assert_eq!(taddr_recipients.len(), 1);
+        assert_eq!(taddr_recipients[0], ("0x793ea9692Ada1900fBd0B80FFFEc6E431fe8b391".to_string(),
+                                        6, "".to_string()));
     }
 }
