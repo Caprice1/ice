@@ -14,4 +14,6 @@ sapling-crypto = { path = "ct-lib/sapling-crypto" }
 
 bech32 = "0.6.0"
 bigint = "1.0"
+ethereum-types = "0.4"
 log = "0.4"
+serde_json = "1.0"
