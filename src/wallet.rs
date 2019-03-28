@@ -93,7 +93,6 @@ impl<'a> Wallet<'a> {
                 );
             }
 
-            //pindex = pindex.and_then(|i| i.get_pprev());
             pindex = pindex.and_then(|i| self.chain_active.next(i));
         }
     }
@@ -325,6 +324,34 @@ impl<'a> Wallet<'a> {
             );
         }
     }
+
+
+    //AddSaplingZKey,
+    // support z_getnewaddress
+    //TODO wu xin
+    pub fn add_sapling_z_key() {
+
+    }
+
+    //AddSpendingKeyToWallet,
+    // support z_getnewaddress
+    //TODO wu xin
+    pub fn add_spending_key_to_wallet() {
+
+    }
+
+    //GetFilteredNotes(
+    //    std::vector<SaplingNoteEntry>& saplingEntries,
+    //    std::string address,
+    //    int minDepth,
+    //    bool ignoreSpent,
+    //    bool requireSpendingKey)
+    // support z_listunspent
+    //TODO hu yuan
+    pub fn get_filtered_notes() {
+
+    }
+
 }
 
 fn copy_previous_witnesses(
@@ -395,6 +422,10 @@ fn update_witness_heights(
         }
     }
 }
+
+
+
+
 
 //TODO
 fn ShowProgress(title: &str, n: i32) {}

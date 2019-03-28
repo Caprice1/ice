@@ -44,6 +44,8 @@ pub trait CoinsView {
 
     //Determine whether a nullifier is spent or not
     fn get_nullifier(&mut self, nullifier: FrHash) -> bool;
+
+    fn push_anchor(&mut self, tree: SaplingMerkleTree);
 }
 
 //
@@ -63,6 +65,8 @@ impl CoinsView for CoinViewDB {
     fn get_nullifier(&mut self, nullifier: FrHash) -> bool {
         false
     }
+
+    fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
 }
 
 pub struct CoinViewCache {
@@ -127,4 +131,6 @@ impl CoinsView for CoinViewCache {
     fn get_nullifier(&mut self, nullifier: FrHash) -> bool {
         false
     }
+
+    fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
 }

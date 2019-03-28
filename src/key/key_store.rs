@@ -15,6 +15,9 @@ use std::collections::hash_map::HashMap;
 use std::str::FromStr;
 use zcash_primitives::JUBJUB;
 
+
+use std::collections::HashSet;
+
 pub struct KeyStore {
     mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
     mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewingKey>,
@@ -256,6 +259,21 @@ impl KeyStore {
         address: SaplingPaymentAddress) -> bool {
         self.mapIncomingViewKeys.insert(address, ivk);
         true
+    }
+
+
+    //GetSaplingPaymentAddresses
+    //TODO wu xin
+    pub fn get_sapling_payment_addresses() -> HashSet<SaplingPaymentAddress> {
+        //HashSet::new()
+        unimplemented!()
+    }
+
+    //bool HaveSaplingSpendingKey(const libzcash::SaplingFullViewingKey &fvk) const
+    //support wallet::GetFilteredNotes
+    //TODO wu xin
+    pub fn have_sapling_spending_key() -> bool {
+        false
     }
 }
 

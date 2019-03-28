@@ -23,12 +23,9 @@ impl BlockIndex {
     }
 }
 
-pub struct ChainActive {
-
-}
+pub struct ChainActive {}
 
 impl ChainActive {
-
     pub fn new() -> Self {
         ChainActive {}
     }
@@ -36,4 +33,8 @@ impl ChainActive {
     pub fn next(&self, pindex: BlockIndex) -> Option<BlockIndex> {
         None
     }
+}
+
+pub struct ValidationState {
+
 }

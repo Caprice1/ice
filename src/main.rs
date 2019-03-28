@@ -20,13 +20,11 @@ use std::thread;
 
 use crate::sendmany::SendMany;
 
+use crate::block_chain::ChainActive;
 use crate::coins::CoinViewCache;
 use crate::key::key_store::KeyStore;
 use crate::other::sanity_check::SanityChecker;
 use crate::wallet::Wallet;
-use crate::block_chain::{
-    ChainActive,
-};
 
 fn main() {
     sendmany::show();
@@ -38,6 +36,7 @@ fn main() {
         let chain_active = ChainActive::new();
         let mut pcoins_tip = CoinViewCache::new();
         let wallet = Wallet::new(&mut pcoins_tip, &chain_active);
+
         //let address_management = AddressManagement::new();
         let sanity_checker = SanityChecker::new();
         let key_store = KeyStore::new();
@@ -79,6 +78,35 @@ fn main() {
 
     println!("Start success");
 }
+
+//UniValue z_getnewaddress(const UniValue& params, bool fHelp)
+//Most important
+
+//TODO, For wu xin
+fn z_getnewaddress() {}
+
+fn z_listunspent() {}
+
+fn z_sendmany() {}
+
+//Secondary important
+fn z_listreceivedbyaddress() {}
+
+fn z_getbalance() {}
+
+fn z_gettotalbalance() {}
+
+fn z_mergetoaddress() {}
+
+fn z_shieldcoinbase() {}
+
+fn z_getoperationstatus() {}
+
+fn z_getoperationresult() {}
+
+fn z_listoperationids() {}
+
+fn z_listaddresses() {}
 
 #[cfg(test)]
 mod test {}
