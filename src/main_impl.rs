@@ -4,6 +4,8 @@ use crate::block_chain::{Block, BlockIndex, ValidationState};
 use crate::coins::{CoinViewCache, CoinsView};
 use crate::key::key_management::FrHash;
 use crate::key::proof::ProofVerifier;
+use crate::wallet::Wallet;
+use crate::transaction::Transaction;
 
 //bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
 
@@ -29,7 +31,7 @@ pub fn active_best_chain_step() {
 }
 
 //bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *pblock)
-pub fn connect_tip(pcoins_tip: &mut CoinViewCache, state: &ValidationState,
+pub fn connect_tip(pcoins_tip: &mut CoinViewCache, wallet: &mut Wallet,  state: &ValidationState,
                 pindex_new: &BlockIndex, pblock: &Block) {
     //call connect_block
     //call wallet.chain_tip
@@ -45,6 +47,7 @@ pub fn connect_tip(pcoins_tip: &mut CoinViewCache, state: &ValidationState,
         .and_then(|anchor| pcoins_tip.get_sapling_anchor_at(anchor));
     connect_block(pblock, state, pindex_new, pcoins_tip, false);
 
+    wallet.chain_tip(pindex_new, pblock, &mut old_sapling_tree.unwrap(), true);
 }
 
 /**
@@ -56,6 +59,18 @@ pub fn disconnect_tip() {}
 
 //bool ConnectBlock(const CBlock& block, CValidationState& state,
 // CBlockIndex* pindex, CCoinsViewCache& view, bool fJustCheck)
+
+pub fn update_coins(tx: &Transaction, inputs: &mut CoinViewCache, height: i32) {
+    /*if !tx.is_coin_base() {
+        for txin in tx.vin {
+        }
+    }*/
+
+    inputs.set_nullifiers(tx, true);
+
+    //add outputs
+
+}
 
 pub fn connect_block(
     block: &Block,
@@ -77,6 +92,7 @@ pub fn connect_block(
         .unwrap();
 
     for tx in block.vtx.iter() {
+        update_coins(tx, view, pindex.nHeight);
         for output  in tx.v_shielded_output.iter() {
             sapling_tree.append(FrHash(output.cmu));
         }

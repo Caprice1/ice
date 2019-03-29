@@ -9,6 +9,7 @@ mod sendmany;
 mod transaction;
 mod transaction_builder;
 mod wallet;
+mod script;
 
 #[macro_use]
 extern crate log;

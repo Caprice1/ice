@@ -2,8 +2,18 @@ use crate::incremental_tree::tree::SaplingMerkleTree;
 use crate::key::key_management::FrHash;
 use crate::transaction::Transaction;
 use std::collections::hash_map::HashMap;
+use crate::transaction::{
+    TxIn, TxOut,
+};
+
 
 use bigint::U256;
+
+pub struct Coins {
+    pub f_coin_base: bool,
+
+    pub vout: Vec<TxOut>,
+}
 
 pub struct AnchorsSaplingCacheEntry {
     entered: bool,
@@ -26,6 +36,12 @@ struct NullifiersCacheEntry {
     dirty: bool,
 }
 
+struct CoinsCacheEntry {
+    coins: Coins,
+    dirty: bool,
+    fresh: bool,
+}
+
 impl NullifiersCacheEntry {
     fn new() -> Self {
         NullifiersCacheEntry {
@@ -37,6 +53,7 @@ impl NullifiersCacheEntry {
 
 type AnchorsSaplingMap = HashMap<FrHash, AnchorsSaplingCacheEntry>;
 type NullifiersMap = HashMap<U256, NullifiersCacheEntry>;
+type CoinsMap = HashMap<FrHash, CoinsCacheEntry>;
 
 pub trait CoinsView {
     fn get_best_anchor(&self) -> Option<FrHash>;
@@ -47,7 +64,7 @@ pub trait CoinsView {
     //Determine whether a nullifier is spent or not
     fn get_nullifier(&mut self, nullifier: FrHash) -> bool;
 
-    fn push_anchor(&mut self, tree: SaplingMerkleTree);
+    //fn push_anchor(&mut self, tree: SaplingMerkleTree);
 
     fn set_best_block(&mut self, block_hash: U256);
 }
@@ -75,14 +92,13 @@ impl CoinsView for CoinViewDB {
         false
     }
 
-    fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
-
     fn set_best_block(&mut self, block_hash: U256) {}
 }
 
 pub struct CoinViewCache {
     //mutable uint256 hashSaplingAnchor;
     hash_sapling_anchor: Option<FrHash>,
+    cache_coins: CoinsMap,
     cached_sapling_anchors: AnchorsSaplingMap,
     cached_sapling_nullifiers: NullifiersMap,
     base: CoinViewDB,
@@ -92,14 +108,15 @@ impl CoinViewCache {
     pub fn new() -> Self {
         CoinViewCache {
             hash_sapling_anchor: None,
+            cache_coins: CoinsMap::new(),
             cached_sapling_anchors: AnchorsSaplingMap::new(),
             cached_sapling_nullifiers: NullifiersMap::new(),
             base: CoinViewDB::new(),
         }
     }
 
-    pub fn set_nullifiers(&mut self, tx: Transaction, spent: bool) {
-        for spend_description in tx.v_shielded_spend {
+    pub fn set_nullifiers(&mut self, tx: &Transaction, spent: bool) {
+        for spend_description in tx.v_shielded_spend.iter() {
             let mut entry = NullifiersCacheEntry::new();
             entry.entered = spent;
             entry.dirty = true;
@@ -108,6 +125,24 @@ impl CoinViewCache {
             //self.cached_sapling_nullifiers.insert(nullifier, entry);
         }
     }
+}
+
+impl CoinViewCache {
+
+
+    pub fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
+
+    /**
+     * Return a modifiable reference to a CCoins. If no entry with the given
+     * txid exists, a new one is created. Simultaneous modifications are not
+     * allowed.
+     */
+
+    //For now omit this, since we omit transaction check
+    pub fn modify_coins(txid: FrHash) {
+
+    }
+
 }
 
 impl CoinsView for CoinViewCache {
@@ -149,8 +184,6 @@ impl CoinsView for CoinViewCache {
     fn get_nullifier(&mut self, nullifier: FrHash) -> bool {
         false
     }
-
-    fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
 
     fn set_best_block(&mut self, block_hash: U256) {}
 }
