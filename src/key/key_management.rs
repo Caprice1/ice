@@ -8,7 +8,7 @@ use pairing::bls12_381::{Bls12, Fr, FrRepr};
 
 use ff::PrimeField;
 
-use zip32::{ExtendedSpendingKey, FullViewingKey, OutgoingViewingKey};
+use zip32::{ExtendedFullViewingKey, ExtendedSpendingKey, FullViewingKey, OutgoingViewingKey};
 
 use zcash_primitives::transaction::components::{OutputDescription, SpendDescription};
 
@@ -31,6 +31,8 @@ impl Hash for FrHash {
 pub type SaplingIncomingViewingKey = IncomingViewingKey<Bls12>;
 
 pub type SaplingExtendedSpendingKey = ExtendedSpendingKey;
+
+pub type SaplingExtendedFullViewingKey = ExtendedFullViewingKey;
 
 pub type SaplingExpandedSpendingKey = ExpandedSpendingKey<Bls12>;
 

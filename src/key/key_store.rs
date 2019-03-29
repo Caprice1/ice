@@ -264,18 +264,16 @@ impl KeyStore {
         true
     }
 
-    //GetSaplingPaymentAddresses
-    //TODO wu xin
-    pub fn get_sapling_payment_addresses() -> HashSet<SaplingPaymentAddress> {
-        //HashSet::new()
-        unimplemented!()
+    pub fn get_sapling_payment_addresses(&self) -> HashSet<SaplingPaymentAddress> {
+        let mut set = HashSet::new();
+        for (k, _) in &self.mapIncomingViewKeys {
+            set.insert(k.clone());
+        }
+        set
     }
 
-    //bool HaveSaplingSpendingKey(const libzcash::SaplingFullViewingKey &fvk) const
-    //support wallet::GetFilteredNotes
-    //TODO wu xin
-    pub fn have_sapling_spending_key() -> bool {
-        false
+    pub fn have_sapling_spending_key(&self, fvk: &SaplingFullViewingKey) -> bool {
+        return self.mapSpendingKeys.contains_key(fvk);
     }
 }
 
