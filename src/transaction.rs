@@ -1,11 +1,10 @@
 use crate::key::key_management::{FrHash, SaplingOutputDescription, SaplingSpendDescription};
+use crate::script::Script;
+use crate::sendmany::CAmount;
 use crate::sendmany::SaplingNoteData;
 use crate::sendmany::SaplingOutPoint;
 use bigint::U256;
 use std::collections::HashMap;
-use crate::script::Script;
-use crate::sendmany::CAmount;
-
 
 pub type NoteDataMap = HashMap<SaplingOutPoint, SaplingNoteData>;
 
@@ -14,7 +13,6 @@ pub struct WalletTransaction {
     //std::map<SaplingOutPoint, SaplingNoteData> mapSaplingData;
     pub mapSaplingData: NoteDataMap,
 }
-
 
 pub struct TxIn {
     prevout: SaplingOutPoint,
@@ -46,6 +44,4 @@ pub struct TxUndo {
     vpreout: Vec<TxInUndo>,
 }
 
-pub struct TxInUndo {
-
-}
+pub struct TxInUndo {}

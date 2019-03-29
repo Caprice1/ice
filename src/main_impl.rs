@@ -4,8 +4,8 @@ use crate::block_chain::{Block, BlockIndex, ValidationState};
 use crate::coins::{CoinViewCache, CoinsView};
 use crate::key::key_management::FrHash;
 use crate::key::proof::ProofVerifier;
-use crate::wallet::Wallet;
 use crate::transaction::Transaction;
+use crate::wallet::Wallet;
 
 //bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
 
@@ -31,8 +31,13 @@ pub fn active_best_chain_step() {
 }
 
 //bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *pblock)
-pub fn connect_tip(pcoins_tip: &mut CoinViewCache, wallet: &mut Wallet,  state: &ValidationState,
-                pindex_new: &BlockIndex, pblock: &Block) {
+pub fn connect_tip(
+    pcoins_tip: &mut CoinViewCache,
+    wallet: &mut Wallet,
+    state: &ValidationState,
+    pindex_new: &BlockIndex,
+    pblock: &Block,
+) {
     //call connect_block
     //call wallet.chain_tip
 
@@ -69,7 +74,6 @@ pub fn update_coins(tx: &Transaction, inputs: &mut CoinViewCache, height: i32) {
     inputs.set_nullifiers(tx, true);
 
     //add outputs
-
 }
 
 pub fn connect_block(
@@ -79,7 +83,6 @@ pub fn connect_block(
     view: &mut CoinViewCache,
     f_just_check: bool,
 ) {
-
     /*BOOST_FOREACH(const CTransaction& tx, block.vtx) {
         const CCoins* coins = view.AccessCoins(tx.GetHash());
         if (coins && !coins->IsPruned())
@@ -93,7 +96,7 @@ pub fn connect_block(
 
     for tx in block.vtx.iter() {
         update_coins(tx, view, pindex.nHeight);
-        for output  in tx.v_shielded_output.iter() {
+        for output in tx.v_shielded_output.iter() {
             sapling_tree.append(FrHash(output.cmu));
         }
     }
@@ -101,11 +104,15 @@ pub fn connect_block(
     view.push_anchor(sapling_tree);
 
     view.set_best_block(pindex.get_block_hash());
-
 }
 
-pub fn check_block(block: &Block, state: &ValidationState, verifier: &ProofVerifier,
-    f_check_POW: bool, f_check_merkle_root: bool) -> bool {
+pub fn check_block(
+    block: &Block,
+    state: &ValidationState,
+    verifier: &ProofVerifier,
+    f_check_POW: bool,
+    f_check_merkle_root: bool,
+) -> bool {
     if !check_block_header(block, state, f_check_POW) {
         return false;
     }

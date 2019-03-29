@@ -1,11 +1,9 @@
 use crate::incremental_tree::tree::SaplingMerkleTree;
 use crate::key::key_management::FrHash;
+use crate::key::key_store::from_to_u256;
 use crate::transaction::Transaction;
+use crate::transaction::{TxIn, TxOut};
 use std::collections::hash_map::HashMap;
-use crate::transaction::{
-    TxIn, TxOut,
-};
-
 
 use bigint::U256;
 
@@ -122,14 +120,13 @@ impl CoinViewCache {
             entry.dirty = true;
             //TODO
             //let nullifier = U256::from(spend_description.nullifier);
-            //self.cached_sapling_nullifiers.insert(nullifier, entry);
+            let nullifier = from_to_u256(&spend_description.nullifier);
+            self.cached_sapling_nullifiers.insert(nullifier, entry);
         }
     }
 }
 
 impl CoinViewCache {
-
-
     pub fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
 
     /**
@@ -139,10 +136,7 @@ impl CoinViewCache {
      */
 
     //For now omit this, since we omit transaction check
-    pub fn modify_coins(txid: FrHash) {
-
-    }
-
+    pub fn modify_coins(txid: FrHash) {}
 }
 
 impl CoinsView for CoinViewCache {

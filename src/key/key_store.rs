@@ -3,6 +3,7 @@ use crate::key::key_management::{
     SaplingExpandedSpendingKey, SaplingExtendedSpendingKey, SaplingPaymentAddress,
     PAYMENT_ADDRESS_LENGTH,
 };
+use bigint::U256;
 use crate::sendmany::CAmount;
 use crate::sendmany::SendManyRecipient;
 use bech32::{u5, Bech32};
@@ -14,6 +15,7 @@ use serde_json::{Result, Value};
 use std::collections::hash_map::HashMap;
 use std::str::FromStr;
 use zcash_primitives::JUBJUB;
+
 
 use std::collections::HashSet;
 
@@ -141,6 +143,11 @@ pub fn decode_destination(address: &str) -> Option<TxDestination> {
         Ok(add) => Some(add),
         Err(_) => None,
     }
+}
+
+//TODO wu xin
+pub fn from_to_u256(value: &[u8; 32]) -> U256 {
+    U256::from(0)
 }
 
 impl KeyStore {

@@ -1,5 +1,1 @@
-
-
-pub struct Script {
-
-}
+pub struct Script {}
