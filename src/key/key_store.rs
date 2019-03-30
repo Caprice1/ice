@@ -18,12 +18,6 @@ use zcash_primitives::JUBJUB;
 
 use std::collections::HashSet;
 
-pub fn from_to_u256(value: &[u8; 32]) -> U256 {
-   U256::from_little_endian(value)
-}
-
-
-
 // Struct used to covert between u5 vector and u8 vector.
 struct BitVec {
     // TODO: Change to bit implementation.
