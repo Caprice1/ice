@@ -6,6 +6,7 @@ use crate::key::key_management::{
 use crate::sendmany::CAmount;
 use crate::sendmany::SendManyRecipient;
 use bech32::{u5, Bech32};
+use ethereum_types::U256;
 use ethereum_types::H160;
 use pairing::bls12_381::Bls12;
 use sapling_crypto::jubjub::{edwards, Unknown};
@@ -17,11 +18,11 @@ use zcash_primitives::JUBJUB;
 
 use std::collections::HashSet;
 
-pub struct KeyStore {
-    mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
-    mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewingKey>,
-    mapSpendingKeys: HashMap<SaplingFullViewingKey, SaplingExtendedSpendingKey>,
+pub fn from_to_u256(value: &[u8; 32]) -> U256 {
+   U256::from_little_endian(value)
 }
+
+
 
 // Struct used to covert between u5 vector and u8 vector.
 struct BitVec {
@@ -141,6 +142,12 @@ pub fn decode_destination(address: &str) -> Option<TxDestination> {
         Ok(add) => Some(add),
         Err(_) => None,
     }
+}
+
+pub struct KeyStore {
+    mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
+    mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewingKey>,
+    mapSpendingKeys: HashMap<SaplingFullViewingKey, SaplingExtendedSpendingKey>,
 }
 
 impl KeyStore {

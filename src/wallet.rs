@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-//use bigint::U256;
+use ethereum_types::U256;
 use ff::PrimeField;
 use pairing::bls12_381::{Bls12, Fr, FrRepr};
 
@@ -26,7 +26,6 @@ pub struct Wallet<'a> {
     key_store: KeyStore,
 }
 
-use bigint::U256;
 
 impl<'a> Wallet<'a> {
     pub fn new(pcoins_tip: &'a mut CoinViewCache, chain_active: &'a ChainActive) -> Self {
