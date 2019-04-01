@@ -1,7 +1,7 @@
 use crate::key::key_management::{FrHash, SaplingOutputDescription, SaplingSpendDescription};
 use crate::sendmany::SaplingNoteData;
 use crate::sendmany::SaplingOutPoint;
-use bigint::U256;
+use ethereum_types::U256;
 use std::collections::HashMap;
 use crate::script::Script;
 use crate::sendmany::CAmount;

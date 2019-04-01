@@ -7,7 +7,7 @@ use ff::PrimeField;
 
 use sapling_crypto::primitives::{Note, PaymentAddress};
 
-use bigint::U256;
+use ethereum_types::U256;
 
 use std::cmp::Eq;
 use std::collections::LinkedList;

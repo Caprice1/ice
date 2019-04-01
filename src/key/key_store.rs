@@ -6,6 +6,7 @@ use crate::key::key_management::{
 use crate::sendmany::CAmount;
 use crate::sendmany::SendManyRecipient;
 use bech32::{u5, Bech32};
+use ethereum_types::U256;
 use ethereum_types::H160;
 use pairing::bls12_381::Bls12;
 use sapling_crypto::jubjub::{edwards, Unknown};
@@ -16,12 +17,6 @@ use std::str::FromStr;
 use zcash_primitives::JUBJUB;
 
 use std::collections::HashSet;
-
-pub struct KeyStore {
-    mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
-    mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewingKey>,
-    mapSpendingKeys: HashMap<SaplingFullViewingKey, SaplingExtendedSpendingKey>,
-}
 
 // Struct used to covert between u5 vector and u8 vector.
 struct BitVec {
@@ -141,6 +136,12 @@ pub fn decode_destination(address: &str) -> Option<TxDestination> {
         Ok(add) => Some(add),
         Err(_) => None,
     }
+}
+
+pub struct KeyStore {
+    mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,
+    mapFullViewingKeys: HashMap<SaplingIncomingViewingKey, SaplingFullViewingKey>,
+    mapSpendingKeys: HashMap<SaplingFullViewingKey, SaplingExtendedSpendingKey>,
 }
 
 impl KeyStore {
@@ -264,18 +265,16 @@ impl KeyStore {
         true
     }
 
-    //GetSaplingPaymentAddresses
-    //TODO wu xin
-    pub fn get_sapling_payment_addresses() -> HashSet<SaplingPaymentAddress> {
-        //HashSet::new()
-        unimplemented!()
+    pub fn get_sapling_payment_addresses(&self) -> HashSet<SaplingPaymentAddress> {
+        let mut set = HashSet::new();
+        for (k, _) in &self.mapIncomingViewKeys {
+            set.insert(k.clone());
+        }
+        set
     }
 
-    //bool HaveSaplingSpendingKey(const libzcash::SaplingFullViewingKey &fvk) const
-    //support wallet::GetFilteredNotes
-    //TODO wu xin
-    pub fn have_sapling_spending_key() -> bool {
-        false
+    pub fn have_sapling_spending_key(&self, fvk: &SaplingFullViewingKey) -> bool {
+        return self.mapSpendingKeys.contains_key(fvk);
     }
 }
 

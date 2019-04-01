@@ -7,7 +7,7 @@ use crate::transaction::{
 };
 
 
-use bigint::U256;
+use ethereum_types::U256;
 
 pub struct Coins {
     pub f_coin_base: bool,

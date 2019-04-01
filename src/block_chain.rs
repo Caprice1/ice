@@ -2,7 +2,7 @@ use crate::key::key_management::FrHash;
 use crate::transaction::Transaction;
 
 //Things that need to be intergated
-use bigint::U256;
+use ethereum_types::U256;
 
 pub struct Block {
     pub vtx: Vec<Transaction>,
