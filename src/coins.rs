@@ -1,11 +1,10 @@
 use crate::incremental_tree::tree::SaplingMerkleTree;
 use crate::key::key_management::FrHash;
-use crate::key::key_store::from_to_u256;
 use crate::transaction::Transaction;
 use crate::transaction::{TxIn, TxOut};
 use std::collections::hash_map::HashMap;
 
-use bigint::U256;
+use ethereum_types::U256;
 
 pub struct Coins {
     pub f_coin_base: bool,
@@ -119,8 +118,8 @@ impl CoinViewCache {
             entry.entered = spent;
             entry.dirty = true;
             //TODO
-            //let nullifier = U256::from(spend_description.nullifier);
-            let nullifier = from_to_u256(&spend_description.nullifier);
+            let nullifier = U256::from(spend_description.nullifier);
+            //let nullifier = from_to_u256(&spend_description.nullifier);
             self.cached_sapling_nullifiers.insert(nullifier, entry);
         }
     }

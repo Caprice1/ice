@@ -3,7 +3,7 @@ use crate::script::Script;
 use crate::sendmany::CAmount;
 use crate::sendmany::SaplingNoteData;
 use crate::sendmany::SaplingOutPoint;
-use bigint::U256;
+use ethereum_types::U256;
 use std::collections::HashMap;
 
 pub type NoteDataMap = HashMap<SaplingOutPoint, SaplingNoteData>;

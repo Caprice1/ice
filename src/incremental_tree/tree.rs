@@ -1,4 +1,4 @@
-use bigint::U256;
+use ethereum_types::U256;
 use ff::PrimeField;
 use pairing::bls12_381::{Bls12, Fr, FrRepr};
 
