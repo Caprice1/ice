@@ -6,8 +6,8 @@ use crate::key::key_management::{
 use crate::sendmany::CAmount;
 use crate::sendmany::SendManyRecipient;
 use bech32::{u5, Bech32};
-use ethereum_types::U256;
 use ethereum_types::H160;
+use ethereum_types::U256;
 use pairing::bls12_381::Bls12;
 use sapling_crypto::jubjub::{edwards, Unknown};
 use serde_json;
@@ -15,7 +15,6 @@ use serde_json::{Result, Value};
 use std::collections::hash_map::HashMap;
 use std::str::FromStr;
 use zcash_primitives::JUBJUB;
-
 
 use std::collections::HashSet;
 
@@ -138,7 +137,6 @@ pub fn decode_destination(address: &str) -> Option<TxDestination> {
         Err(_) => None,
     }
 }
-
 
 pub struct KeyStore {
     mapIncomingViewKeys: HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>,

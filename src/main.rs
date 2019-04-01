@@ -1,3 +1,4 @@
+mod amount;
 mod block_chain;
 mod coins;
 mod incremental_tree;
@@ -9,6 +10,7 @@ mod script;
 mod sendmany;
 mod transaction;
 mod transaction_builder;
+mod txmempool;
 mod wallet;
 
 #[macro_use]

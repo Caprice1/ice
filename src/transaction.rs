@@ -14,6 +14,12 @@ pub struct WalletTransaction {
     pub mapSaplingData: NoteDataMap,
 }
 
+/** An inpoint - a combination of a transaction and an index n into its vin */
+pub struct SaplingInPoint<'a> {
+    pub ptx: &'a Transaction,
+    pub n: u32,
+}
+
 pub struct TxIn {
     prevout: SaplingOutPoint,
     script_sig: Script,
