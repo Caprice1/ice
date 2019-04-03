@@ -6,8 +6,8 @@ use crate::key::key_management::{
 use crate::sendmany::CAmount;
 use crate::sendmany::SendManyRecipient;
 use bech32::{u5, Bech32};
-use ethereum_types::U256;
 use ethereum_types::H160;
+use ethereum_types::U256;
 use pairing::bls12_381::Bls12;
 use sapling_crypto::jubjub::{edwards, Unknown};
 use serde_json;

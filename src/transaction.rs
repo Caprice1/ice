@@ -1,11 +1,10 @@
 use crate::key::key_management::{FrHash, SaplingOutputDescription, SaplingSpendDescription};
+use crate::script::Script;
+use crate::sendmany::CAmount;
 use crate::sendmany::SaplingNoteData;
 use crate::sendmany::SaplingOutPoint;
 use ethereum_types::U256;
 use std::collections::HashMap;
-use crate::script::Script;
-use crate::sendmany::CAmount;
-
 
 pub type NoteDataMap = HashMap<SaplingOutPoint, SaplingNoteData>;
 
@@ -15,15 +14,32 @@ pub struct WalletTransaction {
     pub mapSaplingData: NoteDataMap,
 }
 
+/** An inpoint - a combination of a transaction and an index n into its vin */
+pub struct SaplingInPoint<'a> {
+    pub ptx: &'a Transaction,
+    pub n: usize,
+}
+
+impl<'a> SaplingInPoint<'a> {
+    pub fn new(tx: &'a Transaction, index: usize) -> Self {
+        SaplingInPoint { ptx: tx, n: index }
+    }
+}
 
 pub struct TxIn {
-    prevout: SaplingOutPoint,
-    script_sig: Script,
+    pub prevout: SaplingOutPoint,
+    pub script_sig: Script,
 }
 
 pub struct TxOut {
-    n_value: CAmount,
-    script_pub_key: Script,
+    pub n_value: i64,
+    pub script_pub_key: Script,
+}
+
+impl TxOut {
+    pub fn is_null(&self) -> bool {
+        self.n_value == -1
+    }
 }
 //In DB and network
 pub struct Transaction {
@@ -46,6 +62,4 @@ pub struct TxUndo {
     vpreout: Vec<TxInUndo>,
 }
 
-pub struct TxInUndo {
-
-}
+pub struct TxInUndo {}
