@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-//use bigint::U256;
+use ethereum_types::U256;
 use ff::PrimeField;
 use pairing::bls12_381::{Bls12, Fr, FrRepr};
+use std::collections::HashMap;
 
 use crate::block_chain::{Block, BlockIndex, ChainActive};
 use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
@@ -11,7 +11,11 @@ use crate::transaction::NoteDataMap;
 use crate::transaction::{Transaction, WalletTransaction};
 
 use crate::coins::{CoinViewCache, CoinsView};
-use crate::key::key_management::{FrHash, SaplingOutputDescription};
+use crate::key::key_management::{
+    FrHash, SaplingExtendedFullViewingKey, SaplingExtendedSpendingKey, SaplingOutputDescription,
+    SaplingPaymentAddress,
+};
+use crate::key::key_store::KeyStore;
 use crate::main_impl::read_block_from_disk;
 
 pub struct Wallet<'a> {
@@ -21,9 +25,9 @@ pub struct Wallet<'a> {
 
     pub chain_active: &'a ChainActive,
     pub pcoins_tip: &'a mut CoinViewCache,
-}
 
-use bigint::U256;
+    key_store: KeyStore,
+}
 
 impl<'a> Wallet<'a> {
     pub fn new(pcoins_tip: &'a mut CoinViewCache, chain_active: &'a ChainActive) -> Self {
@@ -34,6 +38,7 @@ impl<'a> Wallet<'a> {
 
             chain_active,
             pcoins_tip,
+            key_store: KeyStore::new(),
         }
     }
 
@@ -300,7 +305,7 @@ impl<'a> Wallet<'a> {
                     let t_hash = tx.hash.clone();
                     let out_point = SaplingOutPoint {
                         hash: t_hash,
-                        n: i as u32,
+                        n: i as usize,
                     };
                     let nd = self.map_wallet.get_mut(&hash).unwrap();
 
@@ -325,15 +330,31 @@ impl<'a> Wallet<'a> {
         }
     }
 
-    //AddSaplingZKey,
-    // support z_getnewaddress
-    //TODO wu xin
-    pub fn add_sapling_z_key() {}
+    pub fn get_new_z_address(&mut self) -> SaplingPaymentAddress {
+        // TODO(xin): Change to rand.
+        let seed = [0u8; 32];
+        let xsk = SaplingExtendedSpendingKey::master(&seed);
+        self.add_spending_key_to_wallet(&xsk)
+    }
 
-    //AddSpendingKeyToWallet,
-    // support z_getnewaddress
-    //TODO wu xin
-    pub fn add_spending_key_to_wallet() {}
+    pub fn add_z_key(
+        &mut self,
+        xsk: &SaplingExtendedSpendingKey,
+        address: &SaplingPaymentAddress,
+    ) -> bool {
+        self.key_store
+            .add_spending_key(xsk.clone(), address.clone())
+    }
+
+    pub fn add_spending_key_to_wallet(
+        &mut self,
+        xsk: &SaplingExtendedSpendingKey,
+    ) -> SaplingPaymentAddress {
+        let xfvk = SaplingExtendedFullViewingKey::from(xsk);
+        let (_, address) = xfvk.default_address().unwrap();
+        self.add_z_key(xsk, &address);
+        address
+    }
 
     //GetFilteredNotes(
     //    std::vector<SaplingNoteEntry>& saplingEntries,
@@ -428,4 +449,13 @@ fn ShowProgress(title: &str, n: i32) {}
 
 pub fn show() {
     println!("Wallet show");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_get_new_z_address() {
+        // TODO(xin): add tests.
+    }
 }

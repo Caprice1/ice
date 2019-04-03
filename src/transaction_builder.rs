@@ -1,4 +1,4 @@
-use bigint::U256;
+use ethereum_types::U256;
 
 use crate::sendmany::{CAmount, OutputDescriptionInfo, SpendDescriptionInfo};
 

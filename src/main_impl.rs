@@ -4,8 +4,12 @@ use crate::block_chain::{Block, BlockIndex, ValidationState};
 use crate::coins::{CoinViewCache, CoinsView};
 use crate::key::key_management::FrHash;
 use crate::key::proof::ProofVerifier;
-use crate::wallet::Wallet;
 use crate::transaction::Transaction;
+use crate::wallet::Wallet;
+use ethereum_types::U256;
+//use rustzcash::{librustzcash_sapling_check_spend, librustzcash_sapling_verification_ctx_init};
+use crate::txmempool::{TxMemPool, TxMemPoolEntry};
+use std::collections::hash_set::HashSet;
 
 //bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
 
@@ -31,8 +35,13 @@ pub fn active_best_chain_step() {
 }
 
 //bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *pblock)
-pub fn connect_tip(pcoins_tip: &mut CoinViewCache, wallet: &mut Wallet,  state: &ValidationState,
-                pindex_new: &BlockIndex, pblock: &Block) {
+pub fn connect_tip(
+    pcoins_tip: &mut CoinViewCache,
+    wallet: &mut Wallet,
+    state: &ValidationState,
+    pindex_new: &BlockIndex,
+    pblock: &Block,
+) {
     //call connect_block
     //call wallet.chain_tip
 
@@ -69,7 +78,6 @@ pub fn update_coins(tx: &Transaction, inputs: &mut CoinViewCache, height: i32) {
     inputs.set_nullifiers(tx, true);
 
     //add outputs
-
 }
 
 pub fn connect_block(
@@ -79,7 +87,6 @@ pub fn connect_block(
     view: &mut CoinViewCache,
     f_just_check: bool,
 ) {
-
     /*BOOST_FOREACH(const CTransaction& tx, block.vtx) {
         const CCoins* coins = view.AccessCoins(tx.GetHash());
         if (coins && !coins->IsPruned())
@@ -93,7 +100,7 @@ pub fn connect_block(
 
     for tx in block.vtx.iter() {
         update_coins(tx, view, pindex.nHeight);
-        for output  in tx.v_shielded_output.iter() {
+        for output in tx.v_shielded_output.iter() {
             sapling_tree.append(FrHash(output.cmu));
         }
     }
@@ -101,11 +108,15 @@ pub fn connect_block(
     view.push_anchor(sapling_tree);
 
     view.set_best_block(pindex.get_block_hash());
-
 }
 
-pub fn check_block(block: &Block, state: &ValidationState, verifier: &ProofVerifier,
-    f_check_POW: bool, f_check_merkle_root: bool) -> bool {
+pub fn check_block(
+    block: &Block,
+    state: &ValidationState,
+    verifier: &ProofVerifier,
+    f_check_POW: bool,
+    f_check_merkle_root: bool,
+) -> bool {
     if !check_block_header(block, state, f_check_POW) {
         return false;
     }
@@ -136,3 +147,167 @@ pub fn accept_block() {
 // CValidationState& state, CBlockIndex** ppindex)
 
 pub fn accept_block_header() {}
+
+pub fn check_transaction_without_proof_verification(
+    tx: &Transaction,
+    state: &ValidationState,
+) -> bool {
+    let mut v_sapling_nullifiers = HashSet::new();
+    for spend in tx.v_shielded_spend.iter() {
+        if v_sapling_nullifiers.contains(&spend.nullifier) {
+            return false;
+        }
+        v_sapling_nullifiers.insert(spend.nullifier);
+    }
+    if tx.is_coin_base() {
+        if tx.v_shielded_spend.len() > 0 {
+            return false;
+        }
+        if tx.v_shielded_output.len() > 0 {
+            return false;
+        }
+    } else {
+
+    }
+    true
+}
+
+pub fn check_transaction(tx: &Transaction, state: &ValidationState) -> bool {
+    if !check_transaction_without_proof_verification(tx, state) {
+        return false;
+    }
+    true
+}
+
+//TODO wu xin
+//check out SignatureHash implements
+fn signature_hash() -> U256 {
+    U256::from(0)
+}
+
+//TODO wu xin
+//Notice: mainly check spend(check signature and zkProof), invoke method from librust
+//SignatureHash should also be implement
+pub fn contexual_check_transaction(tx: &Transaction, state: &ValidationState) -> bool {
+    //uint256 dataToBeSigned;
+    //
+    //    if (!tx.vjoinsplit.empty() ||
+    //        !tx.vShieldedSpend.empty() ||
+    //        !tx.vShieldedOutput.empty())
+    //    {
+    //        auto consensusBranchId = CurrentEpochBranchId(nHeight, Params().GetConsensus());
+    //        // Empty output script.
+    //        CScript scriptCode;
+    //        try {
+    //            dataToBeSigned = SignatureHash(scriptCode, tx, NOT_AN_INPUT, SIGHASH_ALL, 0, consensusBranchId);
+    //        } catch (std::logic_error ex) {
+    //            return state.DoS(100, error("CheckTransaction(): error computing signature hash"),
+    //                                REJECT_INVALID, "error-computing-signature-hash");
+    //        }
+    //    }
+    if !tx.v_shielded_spend.is_empty() || !tx.v_shielded_output.is_empty() {
+        /*let ctx = librustzcash_sapling_verification_ctx_init();
+
+
+        for spend in tx.v_shielded_spend {
+            if ctx.check_spend(
+                spend.cv,
+                spend.anchor,
+                &spend.nullifier,
+                spend.rk,
+                spend.,
+                spend.spend_auth_sig,
+                spend.zkproof
+            )
+        }*/
+    }
+    true
+}
+
+fn contextual_check_inputs() -> bool {
+    true
+}
+
+//TODO
+fn check_final_tx() -> bool {
+    true
+}
+
+pub fn accept_to_mem_pool<'a>(
+    pool: &'a mut TxMemPool<'a>,
+    state: &ValidationState,
+    tx: &'a Transaction,
+    pcoins_tip: &mut CoinViewCache,
+) -> bool {
+    if !check_transaction(tx, state) {
+        return false;
+    }
+    if !contexual_check_transaction(tx, state) {
+        return false;
+    }
+    // Coinbase is only valid in a block, not as a loose transaction
+    if tx.is_coin_base() {
+        return false;
+    }
+    if !check_final_tx() {
+        return false;
+    }
+
+    let hash = tx.hash;
+    if pool.exists(hash) {
+        return false;
+    }
+
+    for txin in tx.vin.iter() {
+        if pool.mapNextTx.contains_key(&txin.prevout) {
+            //Disable replacement feature for now
+            return false;
+        }
+    }
+
+    for spend_description in tx.v_shielded_spend.iter() {
+        if pool.nullifier_exists(U256::from(spend_description.nullifier)) {
+            return false;
+        }
+    }
+
+    {
+        //TODO, backed view
+        let mut view = pcoins_tip;
+
+        if view.have_coins(hash) {
+            return false;
+        }
+
+        for txin in tx.vin.iter() {
+            if !view.have_coins(txin.prevout.hash) {
+                //pf_missing_inputs
+                return false;
+            }
+        }
+
+        if !view.have_inputs(tx) {
+            return false;
+        }
+
+        if !view.have_shield_requirements(tx) {
+            return false;
+        }
+
+        let entry = TxMemPoolEntry::new(tx);
+        //let entry_ptr: &'a TxMemPoolEntry = &entry;
+
+        if !contextual_check_inputs() {
+            return false;
+        }
+
+        //Different check, with different flags
+        if !contextual_check_inputs() {
+            return false;
+        }
+
+        pool.add_unchecked(hash, entry);
+    }
+
+    true
+}

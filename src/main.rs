@@ -1,3 +1,4 @@
+mod amount;
 mod block_chain;
 mod coins;
 mod incremental_tree;
@@ -5,11 +6,12 @@ mod key;
 mod main_impl;
 mod my;
 mod other;
+mod script;
 mod sendmany;
 mod transaction;
 mod transaction_builder;
+mod txmempool;
 mod wallet;
-mod script;
 
 #[macro_use]
 extern crate log;

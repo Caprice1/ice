@@ -1,18 +1,21 @@
 use crate::incremental_tree::tree::SaplingMerkleTree;
 use crate::key::key_management::FrHash;
 use crate::transaction::Transaction;
+use crate::transaction::{TxIn, TxOut};
 use std::collections::hash_map::HashMap;
-use crate::transaction::{
-    TxIn, TxOut,
-};
 
-
-use bigint::U256;
+use ethereum_types::U256;
 
 pub struct Coins {
     pub f_coin_base: bool,
 
     pub vout: Vec<TxOut>,
+}
+
+impl Coins {
+    pub fn is_available(&self, n_pos: usize) -> bool {
+        n_pos < self.vout.len() && !self.vout[n_pos].is_null()
+    }
 }
 
 pub struct AnchorsSaplingCacheEntry {
@@ -62,11 +65,13 @@ pub trait CoinsView {
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree>;
 
     //Determine whether a nullifier is spent or not
-    fn get_nullifier(&mut self, nullifier: FrHash) -> bool;
+    fn get_nullifier(&mut self, nullifier: U256) -> bool;
 
     //fn push_anchor(&mut self, tree: SaplingMerkleTree);
 
     fn set_best_block(&mut self, block_hash: U256);
+
+    fn have_coins(&self, txid: FrHash) -> bool;
 }
 
 //
@@ -88,11 +93,15 @@ impl CoinsView for CoinViewDB {
         None
     }
 
-    fn get_nullifier(&mut self, nullifier: FrHash) -> bool {
+    fn get_nullifier(&mut self, nullifier: U256) -> bool {
         false
     }
 
     fn set_best_block(&mut self, block_hash: U256) {}
+
+    fn have_coins(&self, txid: FrHash) -> bool {
+        false
+    }
 }
 
 pub struct CoinViewCache {
@@ -121,15 +130,14 @@ impl CoinViewCache {
             entry.entered = spent;
             entry.dirty = true;
             //TODO
-            //let nullifier = U256::from(spend_description.nullifier);
-            //self.cached_sapling_nullifiers.insert(nullifier, entry);
+            let nullifier = U256::from(spend_description.nullifier);
+            //let nullifier = from_to_u256(&spend_description.nullifier);
+            self.cached_sapling_nullifiers.insert(nullifier, entry);
         }
     }
 }
 
 impl CoinViewCache {
-
-
     pub fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
 
     /**
@@ -139,10 +147,44 @@ impl CoinViewCache {
      */
 
     //For now omit this, since we omit transaction check
-    pub fn modify_coins(txid: FrHash) {
+    pub fn modify_coins(txid: FrHash) {}
 
+    pub fn have_inputs(&self, tx: &Transaction) -> bool {
+        if !tx.is_coin_base() {
+            for txin in tx.vin.iter() {
+                let prevout = &txin.prevout;
+                let coins = self.access_coins(prevout.hash);
+
+                if !coins.is_none() && coins.unwrap().is_available(prevout.n) {
+                    return false;
+                }
+            }
+        }
+        true
     }
 
+    //Code include fetch_coins
+    //TODO, implement DB action
+    pub fn access_coins(&self, txid: FrHash) -> Option<&Coins> {
+        let entry = self.cache_coins.get(&txid);
+        entry.map(|e| &e.coins)
+    }
+
+    //pub fn fetch_coins(txid: FrHash)
+
+    //Check if all sapling spend requirement(anchors/nullifiers) are satisfied.
+    pub fn have_shield_requirements(&mut self, tx: &Transaction) -> bool {
+        for spend_description in tx.v_shielded_spend.iter() {
+            if self.get_nullifier(U256::from(spend_description.nullifier)) {
+                return false;
+            }
+            let tree = self.get_sapling_anchor_at(FrHash(spend_description.anchor));
+            if tree.is_none() {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 impl CoinsView for CoinViewCache {
@@ -160,11 +202,14 @@ impl CoinsView for CoinViewCache {
             Some(ref entry) => {
                 if entry.entered {
                     return Some(entry.tree.clone());
+                } else {
+                    return None;
                 }
             }
         }
 
-        let tree = self.base.get_sapling_anchor_at(rt.clone());
+        //TODO, implement DB
+        /*let tree = self.base.get_sapling_anchor_at(rt.clone());
         let tree_clone = tree.clone();
         match tree_clone {
             None => {
@@ -176,14 +221,26 @@ impl CoinsView for CoinViewCache {
                 self.cached_sapling_anchors.insert(rt_clone, entry);
                 tree
             }
-        }
-
-        //Some(tree.unwrap())
+        }*/
     }
 
-    fn get_nullifier(&mut self, nullifier: FrHash) -> bool {
-        false
+    fn get_nullifier(&mut self, nullifier: U256) -> bool {
+        let entry = self.cached_sapling_nullifiers.get(&nullifier);
+        let res = entry.map(|e| e.entered);
+        if res.is_none() {
+            return false;
+        } else {
+            return res.unwrap();
+        }
     }
 
     fn set_best_block(&mut self, block_hash: U256) {}
+
+    fn have_coins(&self, txid: FrHash) -> bool {
+        self.cache_coins.contains_key(&txid)
+    }
+
+    /*fn fetch_coins(&self, txid: U256) {
+        self.cache_coins.
+    }*/
 }
