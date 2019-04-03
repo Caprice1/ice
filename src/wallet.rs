@@ -305,7 +305,7 @@ impl<'a> Wallet<'a> {
                     let t_hash = tx.hash.clone();
                     let out_point = SaplingOutPoint {
                         hash: t_hash,
-                        n: i as u32,
+                        n: i as usize,
                     };
                     let nd = self.map_wallet.get_mut(&hash).unwrap();
 

@@ -45,10 +45,10 @@ pub struct OutputDescriptionInfo {
     pub memo: [char; ZC_MEMO_SIZE],
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct SaplingOutPoint {
     pub hash: FrHash, //U256,
-    pub n: u32,
+    pub n: usize,
 }
 
 pub struct SaplingNoteData {

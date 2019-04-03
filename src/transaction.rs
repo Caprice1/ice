@@ -17,17 +17,29 @@ pub struct WalletTransaction {
 /** An inpoint - a combination of a transaction and an index n into its vin */
 pub struct SaplingInPoint<'a> {
     pub ptx: &'a Transaction,
-    pub n: u32,
+    pub n: usize,
+}
+
+impl<'a> SaplingInPoint<'a> {
+    pub fn new(tx: &'a Transaction, index: usize) -> Self {
+        SaplingInPoint { ptx: tx, n: index }
+    }
 }
 
 pub struct TxIn {
-    prevout: SaplingOutPoint,
-    script_sig: Script,
+    pub prevout: SaplingOutPoint,
+    pub script_sig: Script,
 }
 
 pub struct TxOut {
-    n_value: CAmount,
-    script_pub_key: Script,
+    pub n_value: i64,
+    pub script_pub_key: Script,
+}
+
+impl TxOut {
+    pub fn is_null(&self) -> bool {
+        self.n_value == -1
+    }
 }
 //In DB and network
 pub struct Transaction {

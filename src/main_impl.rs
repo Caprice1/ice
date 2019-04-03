@@ -8,8 +8,8 @@ use crate::transaction::Transaction;
 use crate::wallet::Wallet;
 use ethereum_types::U256;
 //use rustzcash::{librustzcash_sapling_check_spend, librustzcash_sapling_verification_ctx_init};
+use crate::txmempool::{TxMemPool, TxMemPoolEntry};
 use std::collections::hash_set::HashSet;
-use crate::txmempool::TxMemPool;
 
 //bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
 
@@ -224,33 +224,89 @@ pub fn contexual_check_transaction(tx: &Transaction, state: &ValidationState) ->
     true
 }
 
+fn contextual_check_inputs() -> bool {
+    true
+}
+
 //TODO
 fn check_final_tx() -> bool {
     true
 }
 
-pub fn accept_to_mem_pool(pool: &TxMemPool, state: &ValidationState, tx: &Transaction) -> bool {
+pub fn accept_to_mem_pool<'a>(
+    pool: &'a mut TxMemPool<'a>,
+    state: &ValidationState,
+    tx: &'a Transaction,
+    pcoins_tip: &mut CoinViewCache,
+) -> bool {
     if !check_transaction(tx, state) {
-        return false
+        return false;
     }
     if !contexual_check_transaction(tx, state) {
-        return false
+        return false;
     }
     // Coinbase is only valid in a block, not as a loose transaction
     if tx.is_coin_base() {
-        return false
+        return false;
     }
     if !check_final_tx() {
-        return false
+        return false;
     }
 
     let hash = tx.hash;
     if pool.exists(hash) {
-        return false
+        return false;
     }
 
-    for outpoint in tx.vin.iter() {
-        //if pool.mapNextTx
+    for txin in tx.vin.iter() {
+        if pool.mapNextTx.contains_key(&txin.prevout) {
+            //Disable replacement feature for now
+            return false;
+        }
+    }
+
+    for spend_description in tx.v_shielded_spend.iter() {
+        if pool.nullifier_exists(U256::from(spend_description.nullifier)) {
+            return false;
+        }
+    }
+
+    {
+        //TODO, backed view
+        let mut view = pcoins_tip;
+
+        if view.have_coins(hash) {
+            return false;
+        }
+
+        for txin in tx.vin.iter() {
+            if !view.have_coins(txin.prevout.hash) {
+                //pf_missing_inputs
+                return false;
+            }
+        }
+
+        if !view.have_inputs(tx) {
+            return false;
+        }
+
+        if !view.have_shield_requirements(tx) {
+            return false;
+        }
+
+        let entry = TxMemPoolEntry::new(tx);
+        //let entry_ptr: &'a TxMemPoolEntry = &entry;
+
+        if !contextual_check_inputs() {
+            return false;
+        }
+
+        //Different check, with different flags
+        if !contextual_check_inputs() {
+            return false;
+        }
+
+        pool.add_unchecked(hash, entry);
     }
 
     true
