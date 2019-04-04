@@ -51,6 +51,7 @@ pub struct SaplingOutPoint {
     pub n: usize,
 }
 
+
 pub struct SaplingNoteData {
     /*
     std::list<SaplingWitness> witnesses;
