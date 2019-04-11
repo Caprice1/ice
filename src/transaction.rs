@@ -49,6 +49,8 @@ pub struct Transaction {
     pub vout: Vec<TxOut>,
     pub v_shielded_spend: Vec<SaplingSpendDescription>,
     pub v_shielded_output: Vec<SaplingOutputDescription>,
+    pub balancing_value: i64,
+    pub binding_sig: [u8; 64],
 }
 
 impl Transaction {
