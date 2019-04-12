@@ -1,9 +1,12 @@
 //Functions and Operation that related to chain operation
 
-use crate::block_chain::{Block, BlockIndex, ValidationState};
-use crate::coins::{CoinViewCache, CoinsView};
+use crate::block_chain::{
+    Block, BlockIndex, BlockUndo, Chain, DiskBlockPos, TxInUndo, ValidationState,
+};
+use crate::coins::{CoinViewCache, Coins, CoinsView};
 use crate::key::key_management::FrHash;
 use crate::key::proof::ProofVerifier;
+use crate::sendmany::SaplingOutPoint;
 use crate::transaction::Transaction;
 use crate::wallet::Wallet;
 use ethereum_types::U256;
@@ -64,7 +67,116 @@ pub fn connect_tip(
  * mempool.removeWithoutBranchId after this, with cs_main held.
  */
 //bool static DisconnectTip(CValidationState &state, bool fBare = false) {
-pub fn disconnect_tip() {}
+pub fn disconnect_tip(
+    chain_active: &Chain,
+    pcoins_tip: &mut CoinViewCache,
+    state: &ValidationState,
+    f_bare: bool,
+) {
+    let pindex_delete = chain_active.tip();
+    let block = pindex_delete.and_then(|pindex| read_block_from_disk(pindex));
+    let sapling_anchor_before_disconnect = pcoins_tip.get_best_anchor();
+    if !disconnect_block(&block.unwrap(), state, &pindex_delete.unwrap(), pcoins_tip) {
+        //Report error here
+        return;
+    }
+}
+
+//TODO
+pub fn disconnect_block(
+    block: &Block,
+    state: &ValidationState,
+    pindex: &BlockIndex,
+    view: &mut CoinViewCache,
+) -> bool {
+    assert!(pindex.get_block_hash() == view.get_best_block());
+    let mut f_clean = true;
+
+    let pos = pindex.get_undo_pos();
+    let hash = pindex.pprev.as_ref().unwrap().get_block_hash();
+    let block_undo = undo_read_from_disk(pos, hash);
+
+    assert!(block_undo.vtxundo.len() + 1 == block.vtx.len());
+
+    for i in (0..block.vtx.len()).rev() {
+        let tx = &block.vtx[i];
+        let hash = tx.hash;
+
+        {
+            let outs = view.modify_coins(hash);
+            //outs.and_then(|outs| {outs.clear_unspendable(); None});
+            if !outs.is_none() {
+                let mut outs = outs.unwrap();
+                outs.clear_unspendable();
+                outs.clear();
+            }
+
+            //let outs_block = Coins::new();
+            //outs.and_then(|outs| {outs.clear(); None});
+        }
+
+        view.set_nullifiers(&tx, false);
+
+        //restore inputs
+        if i > 0 {
+            // not coinbases
+            let tx_undo = &block_undo.vtxundo[i - 1];
+            if tx_undo.vprevout.len() != tx.vin.len() {
+                error!("DisconnectBlock(): transaction and undo data inconsistent");
+            }
+            for j in (0..tx.vin.len()).rev() {
+                let out = &tx.vin[j].prevout;
+                let undo = &tx_undo.vprevout[j];
+                if !apply_tx_in_undo(undo, view, out) {
+                    f_clean = false;
+                }
+            }
+        }
+    }
+
+    view.pop_anchor(pindex.pprev.as_ref().unwrap().hash_final_sapling_root);
+
+    view.set_best_block(pindex.pprev.as_ref().unwrap().get_block_hash());
+
+    f_clean
+}
+
+pub fn apply_tx_in_undo(undo: &TxInUndo, view: &mut CoinViewCache, out: &SaplingOutPoint) -> bool {
+    let mut f_clean = true;
+
+    let mut coins = view.modify_coins(out.hash).unwrap();
+    if undo.n_height != 0 {
+        // undo data cointains height: this is the last output of the prevout tx being spent
+        if !coins.is_pruned() {
+            error!("undo data overwriting existing transaction");
+            f_clean = false;
+            return f_clean;
+        }
+        coins.clear();
+        coins.entry.coins.f_coin_base = undo.f_coin_base;
+        coins.entry.coins.n_height = undo.n_height;
+    } else {
+        if coins.is_pruned() {
+            error!("undo data adding output to missing transaction");
+            f_clean = false;
+            return f_clean;
+        }
+    }
+    if coins.entry.coins.is_available(out.n) {
+        error!("undo data overwriting existing output");
+        f_clean = false;
+        return f_clean;
+    }
+    /*if coins.entry.coins.vout.len() < out.n+1 {
+
+    }*/
+    coins.entry.coins.vout[out.n] = undo.txout;
+    f_clean
+}
+
+pub fn undo_read_from_disk(pos: DiskBlockPos, block_hash: U256) -> BlockUndo {
+    unimplemented!()
+}
 
 //bool ConnectBlock(const CBlock& block, CValidationState& state,
 // CBlockIndex* pindex, CCoinsViewCache& view, bool fJustCheck)

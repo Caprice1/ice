@@ -31,6 +31,7 @@ pub struct TxIn {
     pub script_sig: Script,
 }
 
+#[derive(Copy, Clone)]
 pub struct TxOut {
     pub n_value: i64,
     pub script_pub_key: Script,
@@ -39,6 +40,10 @@ pub struct TxOut {
 impl TxOut {
     pub fn is_null(&self) -> bool {
         self.n_value == -1
+    }
+    pub fn set_null(&mut self) {
+        self.n_value = -1;
+        self.script_pub_key.clear();
     }
 }
 //In DB and network
@@ -58,8 +63,9 @@ impl Transaction {
     }
 }
 
+/*
 pub struct TxUndo {
     vpreout: Vec<TxInUndo>,
 }
 
-pub struct TxInUndo {}
+pub struct TxInUndo {}*/

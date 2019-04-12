@@ -4,9 +4,7 @@ use crate::sendmany::SaplingOutPoint;
 use crate::transaction::SaplingInPoint;
 use crate::transaction::Transaction;
 use ethereum_types::U256;
-use std::collections::{
-    HashMap, VecDeque,
-};
+use std::collections::{HashMap, VecDeque};
 
 pub struct TxMemPoolEntry<'a> {
     tx: &'a Transaction,
@@ -92,11 +90,16 @@ impl<'a> TxMemPool<'a> {
         }
     }
 
-    pub fn remove(&mut self, orig_tx: &Transaction, removed: &mut VecDeque<&'a Transaction>, f_recursive: bool) {
+    pub fn remove(
+        &mut self,
+        orig_tx: &Transaction,
+        removed: &mut VecDeque<&'a Transaction>,
+        f_recursive: bool,
+    ) {
         let mut tx_to_remove = VecDeque::new();
         tx_to_remove.push_back(orig_tx.hash);
         for i in 0..orig_tx.vout.len() {
-            let outpoint = SaplingOutPoint{
+            let outpoint = SaplingOutPoint {
                 hash: orig_tx.hash,
                 n: i,
             };
@@ -111,9 +114,9 @@ impl<'a> TxMemPool<'a> {
                 continue;
             }
             let tx = self.mapTx.get(&hash).unwrap().tx;
-            if f_recursive{
+            if f_recursive {
                 for i in 0..orig_tx.vout.len() {
-                    let outpoint = SaplingOutPoint{
+                    let outpoint = SaplingOutPoint {
                         hash: orig_tx.hash,
                         n: i,
                     };
@@ -129,13 +132,12 @@ impl<'a> TxMemPool<'a> {
 
             removed.push_back(tx);
         }
-
     }
 
     pub fn remove_conflicts(&mut self, tx: &Transaction, removed: &mut VecDeque<&'a Transaction>) {
         //let result = VecDeque::new();
         for txin in tx.vin.iter() {
-            let op =self.mapNextTx.get(&txin.prevout);
+            let op = self.mapNextTx.get(&txin.prevout);
             if !op.is_none() {
                 let inpoint = op.unwrap();
                 let tx_conflict = inpoint.ptx;
@@ -143,37 +145,18 @@ impl<'a> TxMemPool<'a> {
                     self.remove(tx_conflict, removed, true);
                 }
             }
-            /*match self.mapNextTx.get(&txin.prevout) {
-                None => None,
-                Some(inpoint) => {
-                    let tx_conflict = inpoint.ptx;
-                    if tx_conflict.hash != tx.hash {
-                        self.remove(tx_conflict, removed, true);
-                    }
-                    None
-                }
-            };*/
         }
 
         for spend_description in tx.v_shielded_spend.iter() {
-
-            let op = self.map_sapling_nullifier.get(&U256::from(spend_description.nullifier));
+            let op = self
+                .map_sapling_nullifier
+                .get(&U256::from(spend_description.nullifier));
             if !op.is_none() {
                 let tx_conflict = op.unwrap();
                 if tx_conflict.hash != tx.hash {
                     self.remove(tx_conflict, removed, true);
                 }
             }
-            /*
-            match self.map_sapling_nullifier.get(&U256::from(spend_description.nullifier)) {
-                None => None,
-                Some(tx_conflict) => {
-                    if tx_conflict.hash != tx.hash {
-                        self.remove(tx_conflict, removed, true);
-                    }
-                    None
-                }
-            };*/
         }
     }
 }

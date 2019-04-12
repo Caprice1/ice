@@ -3,7 +3,7 @@ use ff::PrimeField;
 use pairing::bls12_381::{Bls12, Fr, FrRepr};
 use std::collections::HashMap;
 
-use crate::block_chain::{Block, BlockIndex, ChainActive};
+use crate::block_chain::{Block, BlockIndex, Chain};
 use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
 use crate::my::constants::WITNESS_CACHE_SIZE;
 use crate::sendmany::SaplingOutPoint;
@@ -23,14 +23,14 @@ pub struct Wallet<'a> {
     nWitnessCacheSize: usize,
     n_time_first_key: i64,
 
-    pub chain_active: &'a ChainActive,
+    pub chain_active: &'a Chain,
     pub pcoins_tip: &'a mut CoinViewCache,
 
     key_store: KeyStore,
 }
 
 impl<'a> Wallet<'a> {
-    pub fn new(pcoins_tip: &'a mut CoinViewCache, chain_active: &'a ChainActive) -> Self {
+    pub fn new(pcoins_tip: &'a mut CoinViewCache, chain_active: &'a Chain) -> Self {
         Wallet {
             nWitnessCacheSize: 0,
             map_wallet: HashMap::new(),

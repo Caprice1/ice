@@ -9,26 +9,91 @@ use ethereum_types::U256;
 pub struct Coins {
     pub f_coin_base: bool,
 
+    pub n_height: i32,
+
     pub vout: Vec<TxOut>,
 }
 
 impl Coins {
+    pub fn new() -> Self {
+        Coins {
+            f_coin_base: false,
+            n_height: 0,
+            vout: Vec::new(),
+        }
+    }
+
     pub fn is_available(&self, n_pos: usize) -> bool {
         n_pos < self.vout.len() && !self.vout[n_pos].is_null()
+    }
+
+    pub fn clear_unspendable(&mut self) {
+        for txout in self.vout.iter_mut() {
+            if (txout.script_pub_key.is_unspendable()) {
+                txout.set_null();
+            }
+        }
+        self.clean_up();
+    }
+
+    //TODO, should release memory?
+    pub fn clean_up(&mut self) {
+        while self.vout.len() > 0 && self.vout.last().unwrap().is_null() {
+            self.vout.pop();
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.f_coin_base = false;
+        self.n_height = 0;
+    }
+
+    // check whether the entire Coins is spent
+    pub fn is_pruned(&self) -> bool {
+        for out in self.vout.iter() {
+            if !out.is_null() {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+pub struct CoinsModifier<'a> {
+    pub entry: &'a mut CoinsCacheEntry,
+}
+
+impl<'a> CoinsModifier<'a> {
+    pub fn new(entry: &'a mut CoinsCacheEntry) -> Self {
+        CoinsModifier { entry }
+    }
+
+    pub fn clear_unspendable(&mut self) {
+        self.entry.coins.clear_unspendable();
+    }
+
+    pub fn clear(&mut self) {
+        self.entry.coins.clear();
+    }
+
+    pub fn is_pruned(&self) -> bool {
+        self.entry.coins.is_pruned()
     }
 }
 
 pub struct AnchorsSaplingCacheEntry {
     entered: bool,
+    dirty: bool,
     tree: SaplingMerkleTree,
-    flags: char,
+    //flags: char,
 }
 
 impl AnchorsSaplingCacheEntry {
     fn new(tree: SaplingMerkleTree) -> Self {
         AnchorsSaplingCacheEntry {
             entered: false,
-            flags: char::from(0),
+            dirty: true,
+            //flags: char::from(0),
             tree: tree,
         }
     }
@@ -39,10 +104,20 @@ struct NullifiersCacheEntry {
     dirty: bool,
 }
 
-struct CoinsCacheEntry {
-    coins: Coins,
-    dirty: bool,
-    fresh: bool,
+pub struct CoinsCacheEntry {
+    pub coins: Coins,
+    pub dirty: bool,
+    pub fresh: bool,
+}
+
+impl CoinsCacheEntry {
+    pub fn new() -> Self {
+        CoinsCacheEntry {
+            coins: Coins::new(),
+            dirty: false,
+            fresh: false,
+        }
+    }
 }
 
 impl NullifiersCacheEntry {
@@ -60,6 +135,8 @@ type CoinsMap = HashMap<FrHash, CoinsCacheEntry>;
 
 pub trait CoinsView {
     fn get_best_anchor(&self) -> Option<FrHash>;
+
+    fn get_best_block(&self) -> U256;
 
     //Retrieve the tree (Sapling) at a particular anchored root in the chain
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree>;
@@ -89,6 +166,10 @@ impl CoinsView for CoinViewDB {
         None
     }
 
+    fn get_best_block(&self) -> U256 {
+        unimplemented!()
+    }
+
     fn get_sapling_anchor_at(&mut self, rt: FrHash) -> Option<SaplingMerkleTree> {
         None
     }
@@ -106,6 +187,7 @@ impl CoinsView for CoinViewDB {
 
 pub struct CoinViewCache {
     //mutable uint256 hashSaplingAnchor;
+    hash_block: U256,
     hash_sapling_anchor: Option<FrHash>,
     cache_coins: CoinsMap,
     cached_sapling_anchors: AnchorsSaplingMap,
@@ -116,6 +198,7 @@ pub struct CoinViewCache {
 impl CoinViewCache {
     pub fn new() -> Self {
         CoinViewCache {
+            hash_block: U256::from(0),
             hash_sapling_anchor: None,
             cache_coins: CoinsMap::new(),
             cached_sapling_anchors: AnchorsSaplingMap::new(),
@@ -138,7 +221,47 @@ impl CoinViewCache {
 }
 
 impl CoinViewCache {
-    pub fn push_anchor(&mut self, tree: SaplingMerkleTree) {}
+    pub fn push_anchor(&mut self, tree: SaplingMerkleTree) {
+        let newrt = tree.root().unwrap();
+        let current_root = self.get_best_anchor().unwrap();
+        if newrt != current_root {
+            let cache_entry = AnchorsSaplingCacheEntry::new(tree);
+            self.cached_sapling_anchors.insert(newrt, cache_entry);
+        }
+        self.hash_sapling_anchor = Some(newrt);
+    }
+
+    pub fn pop_anchor(&mut self, newrt: FrHash) {
+        let current_root = self.get_best_anchor();
+        if !current_root.is_none() {
+            let current_root = current_root.unwrap();
+            if current_root != newrt {
+                let entry = self.cached_sapling_anchors.get_mut(&current_root);
+                if !entry.is_none() {
+                    let e = entry.unwrap();
+                    e.entered = false;
+                    e.dirty = true;
+                }
+                /*entry.and_then(|e| {
+                    e.entered = false;
+                    e.dirty = true;
+                });*/
+            };
+            self.hash_sapling_anchor = Some(newrt);
+        }
+        /*current_root.and_then(|current_root| {
+            if current_root != newrt {
+                let entry = self.cached_sapling_anchors.get_mut(&current_root);
+                entry.and_then(|e| {
+                    e.entered = false;
+                    e.dirty = true;
+                    None
+                });
+            };
+            self.hash_sapling_anchor = Some(newrt);
+            None
+        });*/
+    }
 
     /**
      * Return a modifiable reference to a CCoins. If no entry with the given
@@ -147,7 +270,26 @@ impl CoinViewCache {
      */
 
     //For now omit this, since we omit transaction check
-    pub fn modify_coins(txid: FrHash) {}
+    pub fn modify_coins(&mut self, txid: FrHash) -> Option<CoinsModifier> {
+        //assert();
+        if !self.cache_coins.contains_key(&txid) {
+            self.cache_coins.insert(txid, CoinsCacheEntry::new());
+        }
+        let entry = self.cache_coins.get_mut(&txid);
+
+        /*if !entry.is_none() {
+            entry.unwrap().dirty = true;
+        }*/
+
+        entry.and_then(|mut e| {
+            e.dirty = true;
+            Some(CoinsModifier::new(e))
+        })
+    }
+
+    pub fn get_coins() -> Option<Coins> {
+        unimplemented!()
+    }
 
     pub fn have_inputs(&self, tx: &Transaction) -> bool {
         if !tx.is_coin_base() {
@@ -190,6 +332,10 @@ impl CoinViewCache {
 impl CoinsView for CoinViewCache {
     fn get_best_anchor(&self) -> Option<FrHash> {
         self.hash_sapling_anchor
+    }
+
+    fn get_best_block(&self) -> U256 {
+        self.hash_block
     }
 
     //bool CCoinsViewCache::GetSaplingAnchorAt(const uint256 &rt, SaplingMerkleTree &tree) const {

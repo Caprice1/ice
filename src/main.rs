@@ -23,7 +23,7 @@ use std::thread;
 
 use crate::sendmany::SendMany;
 
-use crate::block_chain::ChainActive;
+use crate::block_chain::Chain;
 use crate::coins::CoinViewCache;
 use crate::key::key_store::KeyStore;
 use crate::other::sanity_check::SanityChecker;
@@ -36,7 +36,7 @@ fn main() {
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        let chain_active = ChainActive::new();
+        let chain_active = Chain::new();
         let mut pcoins_tip = CoinViewCache::new();
         let wallet = Wallet::new(&mut pcoins_tip, &chain_active);
 
