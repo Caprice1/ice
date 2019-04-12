@@ -12,7 +12,10 @@ mod transaction;
 mod transaction_builder;
 mod txmempool;
 mod wallet;
+mod zkp;
 
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
