@@ -5,11 +5,18 @@ use crate::coins::{CoinViewCache, CoinsView};
 use crate::key::key_management::FrHash;
 use crate::key::proof::ProofVerifier;
 use crate::transaction::Transaction;
-use crate::wallet::Wallet;
-use ethereum_types::U256;
-//use rustzcash::{librustzcash_sapling_check_spend, librustzcash_sapling_verification_ctx_init};
 use crate::txmempool::{TxMemPool, TxMemPoolEntry};
+use crate::wallet::Wallet;
+use crate::zkp::{OUTPUT_VK, SPEND_VK};
+
+use bellman::groth16::{Proof};
+use ethereum_types::U256;
+use pairing::bls12_381::Bls12;
+use rustzcash::{};
+use sapling_crypto::redjubjub::Signature;
 use std::collections::hash_set::HashSet;
+use zcash_primitives::JUBJUB;
+use zcash_proofs::sapling::{SaplingVerificationContext};
 
 //bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
 
@@ -181,45 +188,51 @@ pub fn check_transaction(tx: &Transaction, state: &ValidationState) -> bool {
 
 //TODO wu xin
 //check out SignatureHash implements
-fn signature_hash() -> U256 {
-    U256::from(0)
+fn signature_hash(tx: &Transaction) -> [u8; 32] {
+    [0u8; 32]
 }
 
-//TODO wu xin
-//Notice: mainly check spend(check signature and zkProof), invoke method from librust
-//SignatureHash should also be implement
-pub fn contexual_check_transaction(tx: &Transaction, state: &ValidationState) -> bool {
-    //uint256 dataToBeSigned;
-    //
-    //    if (!tx.vjoinsplit.empty() ||
-    //        !tx.vShieldedSpend.empty() ||
-    //        !tx.vShieldedOutput.empty())
-    //    {
-    //        auto consensusBranchId = CurrentEpochBranchId(nHeight, Params().GetConsensus());
-    //        // Empty output script.
-    //        CScript scriptCode;
-    //        try {
-    //            dataToBeSigned = SignatureHash(scriptCode, tx, NOT_AN_INPUT, SIGHASH_ALL, 0, consensusBranchId);
-    //        } catch (std::logic_error ex) {
-    //            return state.DoS(100, error("CheckTransaction(): error computing signature hash"),
-    //                                REJECT_INVALID, "error-computing-signature-hash");
-    //        }
-    //    }
+// Check spend, output, and value balance signature.
+pub fn contextual_check_transaction(tx: &Transaction, state: &ValidationState) -> bool {
     if !tx.v_shielded_spend.is_empty() || !tx.v_shielded_output.is_empty() {
-        /*let ctx = librustzcash_sapling_verification_ctx_init();
+        let mut ctx = SaplingVerificationContext::new();
+        let sighash = signature_hash(&tx);
 
-
-        for spend in tx.v_shielded_spend {
-            if ctx.check_spend(
+        for spend in &tx.v_shielded_spend {
+            let zkproof = match Proof::<Bls12>::read(&spend.zkproof[..]) {
+                Ok(p) => p,
+                Err(_) => return false,
+            };
+            if !ctx.check_spend(
                 spend.cv,
                 spend.anchor,
                 &spend.nullifier,
-                spend.rk,
-                spend.,
-                spend.spend_auth_sig,
-                spend.zkproof
-            )
-        }*/
+                spend.rk.clone(),
+                &sighash,
+                spend.spend_auth_sig.unwrap(),
+                zkproof,
+                &SPEND_VK,
+                &JUBJUB)   {
+                return false;
+            }
+        }
+
+        for output in &tx.v_shielded_output {
+            let zkproof = match Proof::<Bls12>::read(&output.zkproof[..]) {
+                Ok(p) => p,
+                Err(_) => return false,
+            };
+            if !ctx.check_output(
+                output.cv,
+                output.cmu,
+                output.ephemeral_key,
+                zkproof,
+                &OUTPUT_VK,
+                &JUBJUB)   {
+                return false;
+            }
+        }
+        return ctx.final_check(tx.balancing_value, &sighash, Signature::read(&tx.binding_sig[..]).unwrap(), &JUBJUB)
     }
     true
 }
@@ -242,7 +255,7 @@ pub fn accept_to_mem_pool<'a>(
     if !check_transaction(tx, state) {
         return false;
     }
-    if !contexual_check_transaction(tx, state) {
+    if !contextual_check_transaction(tx, state) {
         return false;
     }
     // Coinbase is only valid in a block, not as a loose transaction
