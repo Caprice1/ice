@@ -1,7 +1,10 @@
 use ethereum_types::U256;
 use ff::PrimeField;
+use rand::{Rng};
 use pairing::bls12_381::{Bls12, Fr, FrRepr};
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::prelude::*;
 
 use crate::block_chain::{Block, BlockIndex, Chain};
 use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
@@ -9,7 +12,6 @@ use crate::my::constants::WITNESS_CACHE_SIZE;
 use crate::sendmany::SaplingOutPoint;
 use crate::transaction::NoteDataMap;
 use crate::transaction::{Transaction, WalletTransaction};
-
 use crate::coins::{CoinViewCache, CoinsView};
 use crate::key::key_management::{
     FrHash, SaplingExtendedFullViewingKey, SaplingExtendedSpendingKey, SaplingOutputDescription,
@@ -27,6 +29,7 @@ pub struct Wallet<'a> {
     pub pcoins_tip: &'a mut CoinViewCache,
 
     key_store: KeyStore,
+    seed: [u8; 32],
 }
 
 impl<'a> Wallet<'a> {
@@ -39,7 +42,37 @@ impl<'a> Wallet<'a> {
             chain_active,
             pcoins_tip,
             key_store: KeyStore::new(),
+            seed: [0u8; 32]
         }
+    }
+
+    pub fn save_to_file(&self, file_name: &str) -> std::io::Result<()>{
+        let mut file = File::create(file_name)?;
+        file.write_all(&self.seed)?;
+        Ok(())
+    }
+
+    pub fn load_from_file(&mut self, file_name: &str) ->  std::io::Result<()> {
+        let mut file = File::open(file_name)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let file_bytes = contents.as_bytes();
+        let mut seed = [0u8; 32];
+        seed.copy_from_slice(&file_bytes[0 .. 32]);
+        self.set_seed(seed);
+        Ok(())
+    }
+
+    pub fn set_seed(&mut self, seed: [u8; 32]) -> SaplingPaymentAddress{
+        self.seed = seed;
+        let xsk = SaplingExtendedSpendingKey::master(&seed);
+        self.add_spending_key_to_wallet(&xsk)
+    }
+
+    // Generate a new seed for the wallet, it will overwrite existing seed.
+    pub fn generate_new_seed(&mut self) {
+        let random_bytes = rand::thread_rng().gen::<[u8; 32]>();
+        self.set_seed(random_bytes);
     }
 
     //TOOD, omit something for GUI
@@ -455,7 +488,24 @@ pub fn show() {
 mod tests {
     use super::*;
     #[test]
-    fn test_get_new_z_address() {
-        // TODO(xin): add tests.
+    fn test_save_load_wallet() {
+        let chain_active = Chain::new();
+        let mut pcoins_tip = CoinViewCache::new();
+        let mut wallet = Wallet::new(&mut pcoins_tip, &chain_active);
+        wallet.set_seed([1u8; 32]);
+        let addresses1 = wallet.key_store.get_sapling_payment_addresses();
+        assert_eq!(addresses1.len(), 1);
+
+        assert!(wallet.save_to_file("wallet.txt").is_ok());
+        let mut pcoins_tip2 = CoinViewCache::new();
+        let mut wallet2 = Wallet::new(&mut pcoins_tip2, &chain_active);
+        assert!(wallet2.load_from_file("wallet.txt").is_ok());
+        // Test address is the same from loaded wallet.
+        let addresses2 = wallet2.key_store.get_sapling_payment_addresses();
+        assert_eq!(addresses1.len(), addresses2.len());
+        for add in addresses1.iter() {
+            assert!(addresses2.contains(&add));
+        }
     }
+
 }

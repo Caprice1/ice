@@ -1,8 +1,5 @@
 use crate::key::key_management::*;
-use crate::key::key_management::{
-    SaplingExpandedSpendingKey, SaplingExtendedSpendingKey, SaplingPaymentAddress,
-    PAYMENT_ADDRESS_LENGTH,
-};
+
 use crate::sendmany::CAmount;
 use crate::sendmany::SendManyRecipient;
 use bech32::{u5, Bech32};
@@ -145,6 +142,16 @@ pub struct KeyStore {
 }
 
 impl KeyStore {
+    pub fn from_seed(seed: &[u8]) -> Self {
+        let master = SaplingExtendedSpendingKey::master(&seed);
+        let xfvk = SaplingExtendedFullViewingKey::from(&master);
+        let (_, address) = xfvk.default_address().unwrap();
+        let mut key_store = KeyStore::new();
+        key_store.add_spending_key(master, address);
+        key_store
+    }
+
+
     pub fn new() -> Self {
         KeyStore {
             mapIncomingViewKeys: HashMap::new(),
@@ -316,5 +323,14 @@ mod tests {
                 "".to_string()
             )
         );
+    }
+
+    #[test]
+    fn test_gen_address_from_seed() {
+        let seed = [0u8; 32];
+        let key_store = KeyStore::from_seed(&seed[..]);
+        let address_map = key_store.get_sapling_payment_addresses();
+        let expected_addresss = decode_payment_address("zs180m058urhazk8j98zvz9fsq5zd0vd9dpsc8c6ednwd2xkc3l8z9thmxsezepzx4aascp62t6vy2").unwrap();
+        assert!(address_map.contains(&expected_addresss));
     }
 }
