@@ -1,7 +1,7 @@
 //Functions and Operation that related to chain operation
 
 use crate::block_chain::{
-    Block, BlockIndex, BlockUndo, Chain, DiskBlockPos, TxInUndo, ValidationState,
+    Block, BlockIndex, BlockUndo, Chain, DiskBlockPos, TxInUndo, TxUndo, ValidationState,
 };
 use crate::coins::{CoinViewCache, Coins, CoinsView};
 use crate::key::key_management::FrHash;
@@ -188,15 +188,41 @@ pub fn undo_read_from_disk(pos: DiskBlockPos, block_hash: U256) -> BlockUndo {
 //bool ConnectBlock(const CBlock& block, CValidationState& state,
 // CBlockIndex* pindex, CCoinsViewCache& view, bool fJustCheck)
 
-pub fn update_coins(tx: &Transaction, inputs: &mut CoinViewCache, height: i32) {
-    /*if !tx.is_coin_base() {
-        for txin in tx.vin {
+pub fn update_coins(tx: &Transaction, inputs: &mut CoinViewCache, n_height: i32) -> TxUndo {
+    let mut txundo = TxUndo::new();
+    if !tx.is_coin_base() {
+        for txin in tx.vin.iter() {
+            if let Some(mut coins) = inputs.modify_coins(txin.prevout.hash) {
+                let n_pos = txin.prevout.n;
+                let coins = &mut coins.entry.coins;
+
+                assert!(n_pos < coins.vout.len() && !coins.vout[n_pos].is_null());
+                txundo.vprevout.push(TxInUndo::new(coins.vout[n_pos]));
+
+                coins.spend(n_pos);
+
+                if coins.vout.len() == 0 {
+                    if let Some(mut undo) = txundo.vprevout.last_mut() {
+                        //let t_undo = undo;
+                        undo.set_n_height(coins.n_height);
+                        undo.set_f_coin_base(coins.f_coin_base);
+                    }
+                }
+            }
+
         }
-    }*/
+    }
 
     inputs.set_nullifiers(tx, true);
 
     //add outputs
+
+    inputs.modify_new_coins(tx.hash).and_then(|mut modifier| {
+        modifier.from_tx(tx, n_height);
+        Some(1)
+    });
+
+    txundo
 }
 
 pub fn connect_block(

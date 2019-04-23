@@ -57,6 +57,22 @@ impl Coins {
         }
         true
     }
+
+    pub fn spend(&mut self, n_pos: usize) -> bool {
+        if n_pos >= self.vout.len() || self.vout[n_pos].is_null() {
+            return false;
+        }
+        self.vout[n_pos].set_null();
+        self.clean_up();
+        return true;
+    }
+
+    pub fn from_tx(&mut self, tx: &Transaction, n_height: i32) {
+        self.f_coin_base = tx.is_coin_base();
+        self.vout = tx.vout.clone();
+        self.n_height = n_height;
+        self.clear_unspendable();
+    }
 }
 
 pub struct CoinsModifier<'a> {
@@ -78,6 +94,14 @@ impl<'a> CoinsModifier<'a> {
 
     pub fn is_pruned(&self) -> bool {
         self.entry.coins.is_pruned()
+    }
+
+    /*pub fn get_real_coins(&mut self) -> Coins {
+        self.entry.coins
+    }*/
+
+    pub fn from_tx(&mut self, tx: &Transaction, n_height: i32) {
+        self.entry.coins.from_tx(tx, n_height);
     }
 }
 
@@ -118,6 +142,7 @@ impl CoinsCacheEntry {
             fresh: false,
         }
     }
+
 }
 
 impl NullifiersCacheEntry {
@@ -285,6 +310,11 @@ impl CoinViewCache {
             e.dirty = true;
             Some(CoinsModifier::new(e))
         })
+    }
+
+    pub fn modify_new_coins(&mut self, txid: FrHash) -> Option<CoinsModifier> {
+        let ret = self.modify_coins(txid);
+        ret.and_then(| mut modifier| { modifier.clear(); Some(modifier)})
     }
 
     pub fn get_coins() -> Option<Coins> {

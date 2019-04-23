@@ -16,8 +16,34 @@ pub struct TxInUndo {
     pub n_height: i32,
 }
 
+impl TxInUndo {
+    pub fn new(txout_in: TxOut) -> Self {
+        TxInUndo {
+            txout: txout_in,
+            f_coin_base: false,
+            n_height: 0,
+        }
+    }
+
+    pub fn set_n_height(&mut self, n_height: i32) {
+        self.n_height = n_height;
+    }
+
+    pub fn set_f_coin_base(&mut self, f_coin_base: bool) {
+        self.f_coin_base = f_coin_base;
+    }
+}
+
 pub struct TxUndo {
     pub vprevout: Vec<TxInUndo>,
+}
+
+impl TxUndo {
+    pub fn new() -> Self {
+        TxUndo {
+            vprevout: Vec::new(),
+        }
+    }
 }
 
 pub struct BlockUndo {

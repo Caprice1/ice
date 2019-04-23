@@ -4,7 +4,7 @@ pub struct Script {}
 impl Script {
     //TODO
     pub fn is_unspendable(&self) -> bool {
-        true
+        false
     }
 
     //TODO
