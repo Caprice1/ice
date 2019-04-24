@@ -1,7 +1,8 @@
 //Functions and Operation that related to chain operation
 
 use crate::block_chain::{
-    Block, BlockIndex, BlockUndo, Chain, DiskBlockPos, TxInUndo, TxUndo, ValidationState, BlockUndoView
+    Block, BlockIndex, BlockUndo, BlockUndoView, Chain, DiskBlockPos, TxInUndo, TxUndo,
+    ValidationState,
 };
 use crate::coins::{CoinViewCache, Coins, CoinsView};
 use crate::key::key_management::FrHash;
@@ -12,14 +13,13 @@ use crate::txmempool::{TxMemPool, TxMemPoolEntry};
 use crate::wallet::Wallet;
 use crate::zkp::{OUTPUT_VK, SPEND_VK};
 
-use bellman::groth16::{Proof};
+use bellman::groth16::Proof;
 use ethereum_types::U256;
 use pairing::bls12_381::Bls12;
-use rustzcash::{};
 use sapling_crypto::redjubjub::Signature;
 use std::collections::hash_set::HashSet;
 use zcash_primitives::JUBJUB;
-use zcash_proofs::sapling::{SaplingVerificationContext};
+use zcash_proofs::sapling::SaplingVerificationContext;
 
 //bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
 
@@ -65,7 +65,14 @@ pub fn connect_tip(
     let old_sapling_tree = pcoins_tip
         .get_best_anchor()
         .and_then(|anchor| pcoins_tip.get_sapling_anchor_at(anchor));
-    connect_block(pblock, state, pindex_new, pcoins_tip, block_undo_view, false);
+    connect_block(
+        pblock,
+        state,
+        pindex_new,
+        pcoins_tip,
+        block_undo_view,
+        false,
+    );
 
     wallet.chain_tip(pindex_new, pblock, &mut old_sapling_tree.unwrap(), true);
 }
@@ -86,7 +93,13 @@ pub fn disconnect_tip(
     //need_integrate
     let block = pindex_delete.and_then(|pindex| read_block_from_disk(pindex));
     let sapling_anchor_before_disconnect = pcoins_tip.get_best_anchor();
-    if !disconnect_block(&block.unwrap(), state, &pindex_delete.unwrap(), pcoins_tip, block_undo_view) {
+    if !disconnect_block(
+        &block.unwrap(),
+        state,
+        &pindex_delete.unwrap(),
+        pcoins_tip,
+        block_undo_view,
+    ) {
         //Report error here
         return;
     }
@@ -108,7 +121,6 @@ pub fn disconnect_block(
     let hash = pindex.pprev.as_ref().unwrap().get_block_hash();
     let block_undo = undo_read_from_disk(pos, hash);
     */
-
     let block_hash = pindex.get_block_hash();
     let block_undo_op = block_undo_view.block_undos.get(&block_hash);
     let block_undo = block_undo_op.unwrap();
@@ -121,10 +133,7 @@ pub fn disconnect_block(
 
         {
             let outs_op = view.modify_coins(hash);
-            //outs.and_then(|outs| {outs.clear_unspendable(); None});
-            //if !outs.is_none() {
             if let Some(mut outs) = outs_op {
-                //let mut outs = outs.unwrap();
                 outs.clear_unspendable();
                 outs.clear();
             }
@@ -219,7 +228,6 @@ pub fn update_coins(tx: &Transaction, inputs: &mut CoinViewCache, n_height: i32)
                     }
                 }
             }
-
         }
     }
 
@@ -257,7 +265,6 @@ pub fn connect_block(
     let mut blockundo = BlockUndo::new();
     let mut i = 0;
     for tx in block.vtx.iter() {
-
         let txundo = update_coins(tx, view, pindex.nHeight);
         if i > 0 {
             blockundo.vtxundo.push(txundo);
@@ -371,7 +378,8 @@ pub fn contextual_check_transaction(tx: &Transaction, state: &ValidationState) -
                 spend.spend_auth_sig.unwrap(),
                 zkproof,
                 &SPEND_VK,
-                &JUBJUB)   {
+                &JUBJUB,
+            ) {
                 return false;
             }
         }
@@ -387,11 +395,17 @@ pub fn contextual_check_transaction(tx: &Transaction, state: &ValidationState) -
                 output.ephemeral_key,
                 zkproof,
                 &OUTPUT_VK,
-                &JUBJUB)   {
+                &JUBJUB,
+            ) {
                 return false;
             }
         }
-        return ctx.final_check(tx.balancing_value, &sighash, Signature::read(&tx.binding_sig[..]).unwrap(), &JUBJUB)
+        return ctx.final_check(
+            tx.balancing_value,
+            &sighash,
+            Signature::read(&tx.binding_sig[..]).unwrap(),
+            &JUBJUB,
+        );
     }
     true
 }

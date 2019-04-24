@@ -1,8 +1,8 @@
+use crate::block_chain::BlockUndo;
 use crate::incremental_tree::tree::SaplingMerkleTree;
 use crate::key::key_management::FrHash;
 use crate::transaction::Transaction;
 use crate::transaction::{TxIn, TxOut};
-use crate::block_chain::BlockUndo;
 use std::collections::hash_map::HashMap;
 
 use ethereum_types::U256;
@@ -143,7 +143,6 @@ impl CoinsCacheEntry {
             fresh: false,
         }
     }
-
 }
 
 impl NullifiersCacheEntry {
@@ -158,7 +157,6 @@ impl NullifiersCacheEntry {
 type AnchorsSaplingMap = HashMap<FrHash, AnchorsSaplingCacheEntry>;
 type NullifiersMap = HashMap<U256, NullifiersCacheEntry>;
 type CoinsMap = HashMap<FrHash, CoinsCacheEntry>;
-
 
 pub trait CoinsView {
     fn get_best_anchor(&self) -> Option<FrHash>;
@@ -220,8 +218,6 @@ pub struct CoinViewCache {
     cached_sapling_anchors: AnchorsSaplingMap,
     cached_sapling_nullifiers: NullifiersMap,
     base: CoinViewDB,
-
-
 }
 
 impl CoinViewCache {
@@ -233,7 +229,6 @@ impl CoinViewCache {
             cached_sapling_anchors: AnchorsSaplingMap::new(),
             cached_sapling_nullifiers: NullifiersMap::new(),
             base: CoinViewDB::new(),
-
         }
     }
 
@@ -323,7 +318,10 @@ impl CoinViewCache {
 
     pub fn modify_new_coins(&mut self, txid: FrHash) -> Option<CoinsModifier> {
         let ret = self.modify_coins(txid);
-        ret.and_then(| mut modifier| { modifier.clear(); Some(modifier)})
+        ret.and_then(|mut modifier| {
+            modifier.clear();
+            Some(modifier)
+        })
     }
 
     pub fn get_coins() -> Option<Coins> {

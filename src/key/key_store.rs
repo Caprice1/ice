@@ -151,7 +151,6 @@ impl KeyStore {
         key_store
     }
 
-
     pub fn new() -> Self {
         KeyStore {
             mapIncomingViewKeys: HashMap::new(),
@@ -330,7 +329,10 @@ mod tests {
         let seed = [0u8; 32];
         let key_store = KeyStore::from_seed(&seed[..]);
         let address_map = key_store.get_sapling_payment_addresses();
-        let expected_addresss = decode_payment_address("zs180m058urhazk8j98zvz9fsq5zd0vd9dpsc8c6ednwd2xkc3l8z9thmxsezepzx4aascp62t6vy2").unwrap();
+        let expected_addresss = decode_payment_address(
+            "zs180m058urhazk8j98zvz9fsq5zd0vd9dpsc8c6ednwd2xkc3l8z9thmxsezepzx4aascp62t6vy2",
+        )
+        .unwrap();
         assert!(address_map.contains(&expected_addresss));
     }
 }

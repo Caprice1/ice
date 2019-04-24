@@ -1,24 +1,24 @@
 use ethereum_types::U256;
 use ff::PrimeField;
-use rand::{Rng};
 use pairing::bls12_381::{Bls12, Fr, FrRepr};
+use rand::Rng;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 
 use crate::block_chain::{Block, BlockIndex, Chain};
-use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
-use crate::my::constants::WITNESS_CACHE_SIZE;
-use crate::sendmany::SaplingOutPoint;
-use crate::transaction::NoteDataMap;
-use crate::transaction::{Transaction, WalletTransaction};
 use crate::coins::{CoinViewCache, CoinsView};
+use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
 use crate::key::key_management::{
     FrHash, SaplingExtendedFullViewingKey, SaplingExtendedSpendingKey, SaplingOutputDescription,
     SaplingPaymentAddress,
 };
 use crate::key::key_store::KeyStore;
 use crate::main_impl::read_block_from_disk;
+use crate::my::constants::WITNESS_CACHE_SIZE;
+use crate::sendmany::SaplingOutPoint;
+use crate::transaction::NoteDataMap;
+use crate::transaction::{Transaction, WalletTransaction};
 
 pub struct Wallet<'a> {
     pub map_wallet: HashMap<FrHash, WalletTransaction>,
@@ -42,28 +42,28 @@ impl<'a> Wallet<'a> {
             chain_active,
             pcoins_tip,
             key_store: KeyStore::new(),
-            seed: [0u8; 32]
+            seed: [0u8; 32],
         }
     }
 
-    pub fn save_to_file(&self, file_name: &str) -> std::io::Result<()>{
+    pub fn save_to_file(&self, file_name: &str) -> std::io::Result<()> {
         let mut file = File::create(file_name)?;
         file.write_all(&self.seed)?;
         Ok(())
     }
 
-    pub fn load_from_file(&mut self, file_name: &str) ->  std::io::Result<()> {
+    pub fn load_from_file(&mut self, file_name: &str) -> std::io::Result<()> {
         let mut file = File::open(file_name)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let file_bytes = contents.as_bytes();
         let mut seed = [0u8; 32];
-        seed.copy_from_slice(&file_bytes[0 .. 32]);
+        seed.copy_from_slice(&file_bytes[0..32]);
         self.set_seed(seed);
         Ok(())
     }
 
-    pub fn set_seed(&mut self, seed: [u8; 32]) -> SaplingPaymentAddress{
+    pub fn set_seed(&mut self, seed: [u8; 32]) -> SaplingPaymentAddress {
         self.seed = seed;
         let xsk = SaplingExtendedSpendingKey::master(&seed);
         self.add_spending_key_to_wallet(&xsk)
@@ -75,7 +75,7 @@ impl<'a> Wallet<'a> {
         self.set_seed(random_bytes);
     }
 
-    //TOOD, omit something for GUI
+    //TODO, omit something for GUI
     pub fn scan_for_wallet_transactions(
         &mut self,
         pindex_start: Option<BlockIndex>,
