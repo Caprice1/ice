@@ -2,6 +2,7 @@ use crate::incremental_tree::tree::SaplingMerkleTree;
 use crate::key::key_management::FrHash;
 use crate::transaction::Transaction;
 use crate::transaction::{TxIn, TxOut};
+use crate::block_chain::BlockUndo;
 use std::collections::hash_map::HashMap;
 
 use ethereum_types::U256;
@@ -158,6 +159,7 @@ type AnchorsSaplingMap = HashMap<FrHash, AnchorsSaplingCacheEntry>;
 type NullifiersMap = HashMap<U256, NullifiersCacheEntry>;
 type CoinsMap = HashMap<FrHash, CoinsCacheEntry>;
 
+
 pub trait CoinsView {
     fn get_best_anchor(&self) -> Option<FrHash>;
 
@@ -218,6 +220,9 @@ pub struct CoinViewCache {
     cached_sapling_anchors: AnchorsSaplingMap,
     cached_sapling_nullifiers: NullifiersMap,
     base: CoinViewDB,
+
+    //BlockUndo save
+    block_undos: HashMap<U256, BlockUndo>,
 }
 
 impl CoinViewCache {
@@ -229,6 +234,8 @@ impl CoinViewCache {
             cached_sapling_anchors: AnchorsSaplingMap::new(),
             cached_sapling_nullifiers: NullifiersMap::new(),
             base: CoinViewDB::new(),
+
+            block_undos: HashMap::new(),
         }
     }
 
@@ -242,6 +249,10 @@ impl CoinViewCache {
             //let nullifier = from_to_u256(&spend_description.nullifier);
             self.cached_sapling_nullifiers.insert(nullifier, entry);
         }
+    }
+
+    pub fn save_blockundo(&mut self, block_hash: U256, blockundo: BlockUndo) {
+        self.block_undos.insert(block_hash, blockundo);
     }
 }
 

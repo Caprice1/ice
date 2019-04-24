@@ -50,6 +50,14 @@ pub struct BlockUndo {
     pub vtxundo: Vec<TxUndo>,
 }
 
+impl BlockUndo {
+    pub fn new() -> Self {
+        BlockUndo {
+            vtxundo: Vec::new(),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct BlockIndex {
     phash_block: U256,

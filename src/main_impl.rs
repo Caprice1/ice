@@ -24,7 +24,7 @@ use zcash_proofs::sapling::{SaplingVerificationContext};
 //bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
 
 pub fn read_block_from_disk(pindex: &BlockIndex) -> Option<Block> {
-    None
+    unimplemented!()
 }
 
 /**
@@ -203,7 +203,6 @@ pub fn update_coins(tx: &Transaction, inputs: &mut CoinViewCache, n_height: i32)
 
                 if coins.vout.len() == 0 {
                     if let Some(mut undo) = txundo.vprevout.last_mut() {
-                        //let t_undo = undo;
                         undo.set_n_height(coins.n_height);
                         undo.set_f_coin_base(coins.f_coin_base);
                     }
@@ -243,12 +242,22 @@ pub fn connect_block(
         .and_then(|anchor| view.get_sapling_anchor_at(anchor))
         .unwrap();
 
+    let mut blockundo = BlockUndo::new();
+    let mut i = 0;
     for tx in block.vtx.iter() {
-        update_coins(tx, view, pindex.nHeight);
+
+        let txundo = update_coins(tx, view, pindex.nHeight);
+        if i > 0 {
+            blockundo.vtxundo.push(txundo);
+        }
+
         for output in tx.v_shielded_output.iter() {
             sapling_tree.append(FrHash(output.cmu));
         }
+        i = i + 1;
     }
+
+    view.save_blockundo(pindex.get_block_hash(),   blockundo);
 
     view.push_anchor(sapling_tree);
 
