@@ -1,7 +1,7 @@
 //Functions and Operation that related to chain operation
 
 use crate::block_chain::{
-    Block, BlockIndex, BlockUndo, Chain, DiskBlockPos, TxInUndo, TxUndo, ValidationState,
+    Block, BlockIndex, BlockUndo, Chain, DiskBlockPos, TxInUndo, TxUndo, ValidationState, BlockUndoView
 };
 use crate::coins::{CoinViewCache, Coins, CoinsView};
 use crate::key::key_management::FrHash;
@@ -47,6 +47,7 @@ pub fn active_best_chain_step() {
 //bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *pblock)
 pub fn connect_tip(
     pcoins_tip: &mut CoinViewCache,
+    block_undo_view: &mut BlockUndoView,
     wallet: &mut Wallet,
     state: &ValidationState,
     pindex_new: &BlockIndex,
@@ -64,7 +65,7 @@ pub fn connect_tip(
     let old_sapling_tree = pcoins_tip
         .get_best_anchor()
         .and_then(|anchor| pcoins_tip.get_sapling_anchor_at(anchor));
-    connect_block(pblock, state, pindex_new, pcoins_tip, false);
+    connect_block(pblock, state, pindex_new, pcoins_tip, block_undo_view, false);
 
     wallet.chain_tip(pindex_new, pblock, &mut old_sapling_tree.unwrap(), true);
 }
@@ -77,13 +78,15 @@ pub fn connect_tip(
 pub fn disconnect_tip(
     chain_active: &Chain,
     pcoins_tip: &mut CoinViewCache,
+    block_undo_view: &mut BlockUndoView,
     state: &ValidationState,
     f_bare: bool,
 ) {
     let pindex_delete = chain_active.tip();
+    //need_integrate
     let block = pindex_delete.and_then(|pindex| read_block_from_disk(pindex));
     let sapling_anchor_before_disconnect = pcoins_tip.get_best_anchor();
-    if !disconnect_block(&block.unwrap(), state, &pindex_delete.unwrap(), pcoins_tip) {
+    if !disconnect_block(&block.unwrap(), state, &pindex_delete.unwrap(), pcoins_tip, block_undo_view) {
         //Report error here
         return;
     }
@@ -95,13 +98,20 @@ pub fn disconnect_block(
     state: &ValidationState,
     pindex: &BlockIndex,
     view: &mut CoinViewCache,
+    block_undo_view: &mut BlockUndoView,
 ) -> bool {
     assert!(pindex.get_block_hash() == view.get_best_block());
     let mut f_clean = true;
 
+    /*
     let pos = pindex.get_undo_pos();
     let hash = pindex.pprev.as_ref().unwrap().get_block_hash();
     let block_undo = undo_read_from_disk(pos, hash);
+    */
+
+    let block_hash = pindex.get_block_hash();
+    let block_undo_op = block_undo_view.block_undos.get(&block_hash);
+    let block_undo = block_undo_op.unwrap();
 
     assert!(block_undo.vtxundo.len() + 1 == block.vtx.len());
 
@@ -110,10 +120,11 @@ pub fn disconnect_block(
         let hash = tx.hash;
 
         {
-            let outs = view.modify_coins(hash);
+            let outs_op = view.modify_coins(hash);
             //outs.and_then(|outs| {outs.clear_unspendable(); None});
-            if !outs.is_none() {
-                let mut outs = outs.unwrap();
+            //if !outs.is_none() {
+            if let Some(mut outs) = outs_op {
+                //let mut outs = outs.unwrap();
                 outs.clear_unspendable();
                 outs.clear();
             }
@@ -229,6 +240,7 @@ pub fn connect_block(
     state: &ValidationState,
     pindex: &BlockIndex,
     view: &mut CoinViewCache,
+    block_undo_view: &mut BlockUndoView,
     f_just_check: bool,
 ) {
     /*BOOST_FOREACH(const CTransaction& tx, block.vtx) {
@@ -257,7 +269,7 @@ pub fn connect_block(
         i = i + 1;
     }
 
-    view.save_blockundo(pindex.get_block_hash(),   blockundo);
+    block_undo_view.save_blockundo(pindex.get_block_hash(), blockundo);
 
     view.push_anchor(sapling_tree);
 

@@ -221,8 +221,7 @@ pub struct CoinViewCache {
     cached_sapling_nullifiers: NullifiersMap,
     base: CoinViewDB,
 
-    //BlockUndo save
-    block_undos: HashMap<U256, BlockUndo>,
+
 }
 
 impl CoinViewCache {
@@ -235,7 +234,6 @@ impl CoinViewCache {
             cached_sapling_nullifiers: NullifiersMap::new(),
             base: CoinViewDB::new(),
 
-            block_undos: HashMap::new(),
         }
     }
 
@@ -251,9 +249,9 @@ impl CoinViewCache {
         }
     }
 
-    pub fn save_blockundo(&mut self, block_hash: U256, blockundo: BlockUndo) {
-        self.block_undos.insert(block_hash, blockundo);
-    }
+    /*pub fn get_blockundo(&self, block_hash: U256) -> Option<&BlockUndo> {
+        self.block_undos.get(&block_hash)
+    }*/
 }
 
 impl CoinViewCache {

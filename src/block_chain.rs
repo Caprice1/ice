@@ -1,5 +1,6 @@
 use crate::key::key_management::FrHash;
 use crate::transaction::{Transaction, TxOut};
+use std::collections::hash_map::HashMap;
 
 //Things that need to be intergated
 use ethereum_types::U256;
@@ -55,6 +56,23 @@ impl BlockUndo {
         BlockUndo {
             vtxundo: Vec::new(),
         }
+    }
+}
+
+pub struct BlockUndoView {
+    //BlockUndo save
+    pub block_undos: HashMap<U256, BlockUndo>,
+}
+
+impl BlockUndoView {
+    pub fn new() -> Self {
+        BlockUndoView {
+            block_undos: HashMap::new(),
+        }
+    }
+
+    pub fn save_blockundo(&mut self, block_hash: U256, blockundo: BlockUndo) {
+        self.block_undos.insert(block_hash, blockundo);
     }
 }
 
