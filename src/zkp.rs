@@ -1,5 +1,5 @@
 use bellman::groth16::{
-    prepare_verifying_key, PreparedVerifyingKey, VerifyingKey as BellmanVerifyingKey,
+    prepare_verifying_key, Parameters, PreparedVerifyingKey, VerifyingKey as BellmanVerifyingKey,
 };
 use group::EncodedPoint;
 use pairing::bls12_381::{Bls12, G1Uncompressed, G2Uncompressed};
@@ -7,14 +7,27 @@ use rustc_hex::FromHex;
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde_derive::Deserialize;
 use std::fmt;
+use std::path::Path;
+use zcash_proofs::load_single_parameters;
+
+const SPEND_PARAM_PATH: &str = "res/sapling-spend.params";
+const SPEND_PARAM_HASH : &str = "8270785a1a0d0bc77196f000ee6d221c9c9894f55307bd9357c3f0105d31ca63991ab91324160d8f53e2bbd3c2633a6eb8bdf5205d822e7f3f73edac51b2b70c";
+
+const OUTPUT_PARAM_PATH: &str = "res/sapling-output.params";
+const OUTPUT_PARAM_HASH : &str = "657e3d38dbb5cb5e7dd2970e8b03d69b4787dd907285b5a7f0790dcc8072f60bf593b32cc2d1c030e00ff5ae64bf84c5c3beb84ddc841d48264b4a171744d028";
 
 pub type SaplingPreparedVerifyingKey = PreparedVerifyingKey<Bls12>;
+pub type SaplingParam = Parameters<Bls12>;
 
 lazy_static! {
     pub static ref SPEND_VK: SaplingPreparedVerifyingKey =
         { load_sapling_spend_verifying_key().unwrap() };
     pub static ref OUTPUT_VK: SaplingPreparedVerifyingKey =
         { load_sapling_output_verifying_key().unwrap() };
+    pub static ref SPEND_PARAM: SaplingParam =
+        { load_single_parameters(Path::new(SPEND_PARAM_PATH), SPEND_PARAM_HASH).0 };
+    pub static ref OUTPUT_PARAM: SaplingParam =
+        { load_single_parameters(Path::new(OUTPUT_PARAM_PATH), OUTPUT_PARAM_HASH).0 };
 }
 
 fn clean_0x(s: &str) -> &str {
@@ -115,6 +128,8 @@ pub fn load_sapling_output_verifying_key() -> Result<SaplingPreparedVerifyingKey
     Ok(prepare_verifying_key(&output_vk.into()))
 }
 
+pub fn load_sapling_spend_param() {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,5 +137,11 @@ mod tests {
     fn load_vk_key() {
         assert_eq!(load_sapling_spend_verifying_key().is_ok(), true);
         assert_eq!(load_sapling_output_verifying_key().is_ok(), true);
+    }
+
+    #[test]
+    fn load_parameters() {
+        let (_, _) = load_single_parameters(Path::new(SPEND_PARAM_PATH), SPEND_PARAM_HASH);
+        let (_, _) = load_single_parameters(Path::new(OUTPUT_PARAM_PATH), OUTPUT_PARAM_HASH);
     }
 }

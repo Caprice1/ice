@@ -142,6 +142,12 @@ pub struct KeyStore {
 }
 
 impl KeyStore {
+    pub fn get_map_full_viewing_keys(
+        &self,
+    ) -> &HashMap<SaplingIncomingViewingKey, SaplingFullViewingKey> {
+        &self.mapFullViewingKeys
+    }
+
     pub fn from_seed(seed: &[u8]) -> Self {
         let master = SaplingExtendedSpendingKey::master(&seed);
         let xfvk = SaplingExtendedFullViewingKey::from(&master);

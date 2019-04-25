@@ -10,8 +10,8 @@ use crate::block_chain::{Block, BlockIndex, Chain};
 use crate::coins::{CoinViewCache, CoinsView};
 use crate::incremental_tree::tree::{SaplingMerkleTree, SaplingWitness};
 use crate::key::key_management::{
-    FrHash, SaplingExtendedFullViewingKey, SaplingExtendedSpendingKey, SaplingOutputDescription,
-    SaplingPaymentAddress,
+    FrHash, SaplingExtendedFullViewingKey, SaplingExtendedSpendingKey, SaplingIncomingViewingKey,
+    SaplingOutputDescription, SaplingPaymentAddress,
 };
 use crate::key::key_store::KeyStore;
 use crate::main_impl::read_block_from_disk;
@@ -20,8 +20,12 @@ use crate::sendmany::SaplingOutPoint;
 use crate::transaction::NoteDataMap;
 use crate::transaction::{Transaction, WalletTransaction};
 
+type SaplingIncomingViewingKeyMap = HashMap<SaplingPaymentAddress, SaplingIncomingViewingKey>;
+//type TxSpendMap =
+
 pub struct Wallet<'a> {
     pub map_wallet: HashMap<FrHash, WalletTransaction>,
+    //pub map_tx_sapling_nullifier:
     nWitnessCacheSize: usize,
     n_time_first_key: i64,
 
@@ -103,7 +107,7 @@ impl<'a> Wallet<'a> {
                 block.and_then(|b| {
                     for tx in b.vtx.iter() {
                         if self.add_to_wallet_if_invloving_me(tx, &b, f_update) {
-                            my_tx_hashes.push(tx.hash.clone());
+                            my_tx_hashes.push(tx.hash);
                             ret += 1;
                         }
                     }
@@ -135,13 +139,117 @@ impl<'a> Wallet<'a> {
         }
     }
 
-    pub fn add_to_wallet_if_invloving_me(
+    pub fn find_my_sapling_notes(
         &self,
+        tx: &Transaction,
+    ) -> (NoteDataMap, SaplingIncomingViewingKeyMap) {
+        let hash = tx.hash;
+
+        let note_data = NoteDataMap::new();
+        let viewing_keys_to_add = SaplingIncomingViewingKeyMap::new();
+
+        for output in tx.v_shielded_output.iter() {
+            let map_full_viewing_keys = self.key_store.get_map_full_viewing_keys();
+            for (ivk, val) in map_full_viewing_keys.iter() {}
+        }
+
+        (note_data, viewing_keys_to_add)
+    }
+
+    fn add_sapling_incoming_view_key(
+        &mut self,
+        ivk: SaplingIncomingViewingKey,
+        addr: SaplingPaymentAddress,
+    ) -> bool {
+        self.key_store.add_incoming_viewing_key(ivk, addr)
+    }
+
+    //TODO
+    fn add_to_transparent_spends(&mut self, outpoint: &SaplingOutPoint, wtxid: FrHash) {}
+
+    //TODO
+    fn add_to_sapling_spends(&mut self, nullifier: U256, wtxid: &FrHash) {}
+
+    fn add_to_spends(&mut self, wtxid: FrHash) {
+        assert!(self.map_wallet.contains_key(&wtxid));
+
+        let this_tx = self.map_wallet.get(&wtxid).unwrap();
+        if this_tx.tx.is_coin_base() {
+            return;
+        }
+
+        //TODO(can be deal later), uncomment it then compile error
+        /*
+        for txin in this_tx.tx.vin.iter() {
+            self.add_to_transparent_spends(&txin.prevout, wtxid);
+        }
+
+        for spend in this_tx.tx.v_shielded_spend.iter() {
+            self.add_to_sapling_spends(U256::from(spend.nullifier), &wtxid);
+        }*/
+    }
+
+    fn add_to_wallet(&mut self, wtx_in: WalletTransaction, f_from_load_wallet: bool) -> bool {
+        let hash = wtx_in.tx.hash;
+        if f_from_load_wallet {
+            //No DB yet
+        } else {
+            let mut f_inserted_new = false;
+            if !self.map_wallet.contains_key(&hash) {
+                self.map_wallet.insert(hash, wtx_in);
+                f_inserted_new = true;
+            }
+            let mut wtx = self.map_wallet.get_mut(&hash).unwrap();
+
+            //TODO, uncomment it then compile error
+            //wtx.bind_wallet(&self);
+
+            //TODO, uncomment it then compile error
+            //self.update_sapling_nullifier_note_map_with_tx(wtx);
+
+            if f_inserted_new {
+                self.add_to_spends(hash);
+            }
+        }
+        true
+    }
+
+    //TODO
+    fn is_mine(&self, tx: &Transaction) -> bool {
+        false
+    }
+
+    //TODO
+    fn is_from_me(&self, tx: &Transaction) -> bool {
+        false
+    }
+
+    pub fn add_to_wallet_if_invloving_me(
+        &mut self,
         tx: &Transaction,
         block: &Block,
         f_update: bool,
     ) -> bool {
-        false
+        let f_existed = self.map_wallet.contains_key(&tx.hash);
+        if f_existed && !f_update {
+            return false;
+        }
+
+        let (sapling_note_data, addresses_to_add) = self.find_my_sapling_notes(tx);
+        for address_to_add in addresses_to_add {
+            if !self.add_sapling_incoming_view_key(address_to_add.1, address_to_add.0) {
+                return false;
+            }
+        }
+
+        if f_existed || self.is_mine(tx) || self.is_from_me(tx) || sapling_note_data.len() > 0 {
+            let mut wtx = WalletTransaction::new((*tx).clone());
+            if sapling_note_data.len() > 0 {
+                wtx.mapSaplingData = sapling_note_data;
+            }
+            return self.add_to_wallet(wtx, false);
+        }
+        true
     }
 
     pub fn get_sapling_note_witnesses(
@@ -223,6 +331,7 @@ impl<'a> Wallet<'a> {
     //            mapSaplingNullifiersToNotes[nullifier] = op;
     //            item.second.nullifier = nullifier;
 
+    //TODO
     fn update_sapling_nullifier_note_map_with_tx(&mut self, wtx: &mut WalletTransaction) {
         for (op, nd) in wtx.mapSaplingData.iter() {
             if nd.witnesses.is_empty() {
