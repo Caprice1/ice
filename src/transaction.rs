@@ -3,6 +3,7 @@ use crate::script::Script;
 use crate::sendmany::CAmount;
 use crate::sendmany::SaplingNoteData;
 use crate::sendmany::SaplingOutPoint;
+use crate::wallet::Wallet;
 use ethereum_types::U256;
 use std::collections::HashMap;
 
@@ -12,6 +13,21 @@ pub type NoteDataMap = HashMap<SaplingOutPoint, SaplingNoteData>;
 pub struct WalletTransaction {
     //std::map<SaplingOutPoint, SaplingNoteData> mapSaplingData;
     pub mapSaplingData: NoteDataMap,
+    pub tx: Transaction,
+    //pub p_wallet: &'a Wallet,
+}
+
+impl WalletTransaction {
+    pub fn new(tx: Transaction) -> Self {
+        WalletTransaction {
+            mapSaplingData: NoteDataMap::new(),
+            tx,
+            //p_wallet
+        }
+    }
+
+    //TODO
+    pub fn bind_wallet(&self, p_wallet_in: &Wallet) {}
 }
 
 /** An inpoint - a combination of a transaction and an index n into its vin */
@@ -26,6 +42,7 @@ impl<'a> SaplingInPoint<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct TxIn {
     pub prevout: SaplingOutPoint,
     pub script_sig: Script,
@@ -47,6 +64,7 @@ impl TxOut {
     }
 }
 //In DB and network
+#[derive(Clone)]
 pub struct Transaction {
     pub hash: FrHash, //U256,
 
