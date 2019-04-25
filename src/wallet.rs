@@ -364,9 +364,8 @@ impl<'a> Wallet<'a> {
     }
 
     pub fn get_new_z_address(&mut self) -> SaplingPaymentAddress {
-        // TODO(xin): Change to rand.
-        let seed = [0u8; 32];
-        let xsk = SaplingExtendedSpendingKey::master(&seed);
+        let random_bytes = rand::thread_rng().gen::<[u8; 32]>();
+        let xsk = SaplingExtendedSpendingKey::master(&random_bytes);
         self.add_spending_key_to_wallet(&xsk)
     }
 
