@@ -68,6 +68,14 @@ pub struct SaplingNoteData {
 }
 
 impl SaplingNoteData {
+    pub fn new(ivk: SaplingIncomingViewingKey) -> Self {
+        SaplingNoteData {
+            witnesses: LinkedList::new(),
+            witnessHeight: 0,
+            ivk: ivk,
+            nullifier: None,
+        }
+    }
     pub fn push_front(&mut self, witness: SaplingWitness) {
         self.witnesses.push_front(witness);
     }
