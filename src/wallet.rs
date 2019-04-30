@@ -5,6 +5,7 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
+use zcash_primitives::{note_encryption::try_sapling_note_decryption, JUBJUB};
 
 use crate::block_chain::{Block, BlockIndex, Chain};
 use crate::coins::{CoinViewCache, CoinsView};
@@ -16,7 +17,7 @@ use crate::key::key_management::{
 use crate::key::key_store::KeyStore;
 use crate::main_impl::read_block_from_disk;
 use crate::my::constants::WITNESS_CACHE_SIZE;
-use crate::sendmany::SaplingOutPoint;
+use crate::sendmany::{SaplingNoteData, SaplingOutPoint};
 use crate::transaction::NoteDataMap;
 use crate::transaction::{Transaction, WalletTransaction};
 
@@ -145,15 +146,40 @@ impl<'a> Wallet<'a> {
     ) -> (NoteDataMap, SaplingIncomingViewingKeyMap) {
         let hash = tx.hash;
 
-        let note_data = NoteDataMap::new();
-        let viewing_keys_to_add = SaplingIncomingViewingKeyMap::new();
+        let mut note_data_map = NoteDataMap::new();
+        let mut viewing_keys_to_add = SaplingIncomingViewingKeyMap::new();
 
-        for output in tx.v_shielded_output.iter() {
+        for (i, output) in tx.v_shielded_output.iter().enumerate() {
             let map_full_viewing_keys = self.key_store.get_map_full_viewing_keys();
-            for (ivk, val) in map_full_viewing_keys.iter() {}
+            for (ivk, val) in map_full_viewing_keys.iter() {
+                let epk = match output.ephemeral_key.as_prime_order(&JUBJUB) {
+                    Some(p) => p,
+                    None => continue,
+                };
+                let result = match try_sapling_note_decryption(
+                    &ivk,
+                    &epk,
+                    &output.cmu,
+                    &output.enc_ciphertext,
+                ) {
+                    Some(r) => r,
+                    None => continue,
+                };
+                let address = result.1;
+                if !viewing_keys_to_add.contains_key(&address) {
+                    viewing_keys_to_add.insert(address.clone(), ivk.clone());
+                }
+                let out_point = SaplingOutPoint {
+                    hash: tx.hash,
+                    n: i,
+                };
+                let note_data = SaplingNoteData::new(ivk.clone());
+                note_data_map.insert(out_point, note_data);
+                break;
+            }
         }
 
-        (note_data, viewing_keys_to_add)
+        (note_data_map, viewing_keys_to_add)
     }
 
     fn add_sapling_incoming_view_key(
@@ -474,9 +500,8 @@ impl<'a> Wallet<'a> {
     }
 
     pub fn get_new_z_address(&mut self) -> SaplingPaymentAddress {
-        // TODO(xin): Change to rand.
-        let seed = [0u8; 32];
-        let xsk = SaplingExtendedSpendingKey::master(&seed);
+        let random_bytes = rand::thread_rng().gen::<[u8; 32]>();
+        let xsk = SaplingExtendedSpendingKey::master(&random_bytes);
         self.add_spending_key_to_wallet(&xsk)
     }
 
