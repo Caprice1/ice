@@ -134,7 +134,7 @@ impl<'a> Wallet<'a> {
                     true,
                 );
             }
-
+            //TODO TASK 1
             pindex = pindex.and_then(|i| self.chain_active.next(i));
         }
     }
@@ -170,6 +170,7 @@ impl<'a> Wallet<'a> {
     //TODO
     fn add_to_sapling_spends(&mut self, nullifier: U256, wtxid: &FrHash) {}
 
+    //TODO, just cache though
     fn add_to_spends(&mut self, wtxid: FrHash) {
         assert!(self.map_wallet.contains_key(&wtxid));
 

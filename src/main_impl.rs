@@ -44,6 +44,7 @@ pub fn active_best_chain_step() {
     //call connect_tip
 }
 
+//TODO TASK 3
 //bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *pblock)
 pub fn connect_tip(
     pcoins_tip: &mut CoinViewCache,
@@ -419,6 +420,7 @@ fn check_final_tx() -> bool {
     true
 }
 
+//TODO TASK 2
 pub fn accept_to_mem_pool<'a>(
     pool: &'a mut TxMemPool<'a>,
     state: &ValidationState,
